@@ -421,13 +421,13 @@ function buildReportHTML(analysisUrl, skillStates) {
   <div style="max-width:860px;margin:0 auto">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px">
       <div style="width:48px;height:48px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px">📊</div>
-      <div><h1 style="font-size:24px;font-weight:800;margin:0;letter-spacing:-.02em">PageIQ — SEO Report</h1><p style="color:#a5b4fc;font-size:13px;margin:3px 0 0">10-Skill AI SEO Analysis</p></div>
+      <div><h1 style="font-size:24px;font-weight:800;margin:0;letter-spacing:-.02em">PageIQ — SEO Report</h1><p style="color:#a5b4fc;font-size:13px;margin:3px 0 0">11-Skill AI SEO Analysis</p></div>
       ${avg!=null?`<div style="margin-left:auto;text-align:center"><div style="font-size:44px;font-weight:800;color:${avgColor};line-height:1">${avg}</div><div style="font-size:10px;color:#a5b4fc;text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Avg Score</div></div>`:''}
     </div>
     <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px 18px;display:flex;gap:28px;flex-wrap:wrap">
       <div><div style="font-size:10px;color:#a5b4fc;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Page Analyzed</div><div style="font-size:13px;color:#e0e7ff;margin-top:3px;word-break:break-all">${analysisUrl}</div></div>
       <div><div style="font-size:10px;color:#a5b4fc;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Report Date</div><div style="font-size:13px;color:#e0e7ff;margin-top:3px">${date}</div></div>
-      <div><div style="font-size:10px;color:#a5b4fc;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Skills Complete</div><div style="font-size:13px;color:#e0e7ff;margin-top:3px">${done.length}/10</div></div>
+      <div><div style="font-size:10px;color:#a5b4fc;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Skills Complete</div><div style="font-size:13px;color:#e0e7ff;margin-top:3px">${done.length}/11</div></div>
     </div>
   </div>
 </div>
@@ -586,9 +586,9 @@ export default function App() {
         {/* Hero */}
         <div className="hero-landing">
           <div className="hero-landing-inner">
-            <div className="hero-badge">🚀 10 AI-Powered SEO Skills · Instant Results</div>
+            <div className="hero-badge">🚀 11 AI-Powered SEO Skills · Instant Results</div>
             <h1>Your Page.<br/><span>Smarter Rankings.</span></h1>
-            <p>Paste any URL and get 10 professional SEO audits in under 2 minutes — E-E-A-T, Schema, AI Citation, Topical Authority & more.</p>
+            <p>Paste any URL and get 11 professional SEO audits in under 2 minutes — E-E-A-T, Schema, AI Citation, URL Structure & more.</p>
             <div className="hero-url-box">
               <input
                 type="url"
@@ -611,7 +611,7 @@ export default function App() {
 
         {/* Stats */}
         <div className="stats-strip">
-          <div className="stat"><div className="stat-val">10</div><div className="stat-lbl">SEO Skills Per Audit</div></div>
+          <div className="stat"><div className="stat-val">11</div><div className="stat-lbl">SEO Skills Per Audit</div></div>
           <div className="stat"><div className="stat-val">90s</div><div className="stat-lbl">Average Run Time</div></div>
           <div className="stat"><div className="stat-val">AI</div><div className="stat-lbl">SGE, Perplexity & ChatGPT Ready</div></div>
           <div className="stat"><div className="stat-val">PDF</div><div className="stat-lbl">Client-Ready Export</div></div>
@@ -630,8 +630,8 @@ export default function App() {
             </div>
             <div className="step-item">
               <div className="step-circle">⚡</div>
-              <h3>Run 10 Skills</h3>
-              <p>PageIQ fetches and analyzes the page, running all 10 SEO audits simultaneously in the background.</p>
+              <h3>Run 11 Skills</h3>
+              <p>PageIQ fetches and analyzes the page, running all 11 SEO audits simultaneously in the background.</p>
             </div>
             <div className="step-item">
               <div className="step-circle">📤</div>
@@ -644,7 +644,7 @@ export default function App() {
         {/* 10 Skills */}
         <div className="skills-features">
           <div className="section-label">What you get</div>
-          <div className="section-title" style={{marginBottom:12}}>10 Professional SEO Skills</div>
+          <div className="section-title" style={{marginBottom:12}}>11 Professional SEO Skills</div>
           <div className="section-sub">Each skill delivers specific, actionable output — not just a score.</div>
           <div className="skills-feat-grid">
             {SKILLS.map(skill => (
@@ -680,7 +680,7 @@ export default function App() {
         {/* CTA */}
         <div className="cta-section">
           <h2>Ready to audit your first page?</h2>
-          <p>It's free to use. Paste any URL and get your full 10-skill SEO report in under 2 minutes.</p>
+          <p>It's free to use. Paste any URL and get your full 11-skill SEO report in under 2 minutes.</p>
           <div className="hero-url-box" style={{maxWidth:'560px',margin:'0 auto 16px'}}>
             <input
               type="url"
@@ -713,7 +713,7 @@ export default function App() {
       <div className="analyzer-hero">
         <div className="analyzer-hero-inner">
           <h2>SEO Audit — {analysisUrl || 'Ready'}</h2>
-          <p>{isRunningAll ? `Running skill ${progress.done + 1} of ${progress.total}…` : `${completedCount} of 10 skills complete`}</p>
+          <p>{isRunningAll ? `Running skill ${progress.done + 1} of ${progress.total}…` : `${completedCount} of 11 skills complete`}</p>
           <div className="url-row">
             <input
               className="url-input"
@@ -740,7 +740,7 @@ export default function App() {
       {/* Export bar */}
       {hasResults && (
         <div className="export-bar">
-          <span className="export-label">✅ {completedCount}/10 skills complete</span>
+          <span className="export-label">✅ {completedCount}/11 skills complete</span>
           {shareCopied
             ? <span className="copied-badge">✓ Link copied!</span>
             : <button className="btn-export" onClick={copyShareLink}>🔗 Copy Share Link</button>

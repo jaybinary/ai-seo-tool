@@ -60,6 +60,12 @@ CONTENT: ${content.slice(0, 3000)}`
     prompt: (content, url) => `You are an AI citation optimization specialist. Optimize this content from ${url} to be cited by ChatGPT, Perplexity AI, and Google SGE. Return ONLY valid JSON (no markdown) in this exact format:
 {"summary":"<assessment>","citation_score":<0-100>,"citation_triggers":["<trigger1>","<trigger2>"],"optimized_passages":[{"original":"<original>","optimized":"<rewritten>","reason":"<why>"}],"missing_citation_signals":["<signal1>","<signal2>"],"best_citation_format":"<paragraph|list|definition|statistic>","ai_engine_specific":{"perplexity":"<tip>","chatgpt":"<tip>","google_sge":"<tip>"},"action_items":["<action1>","<action2>","<action3>"]}
 CONTENT: ${content.slice(0, 3000)}`
+  },
+  urlstructure: {
+    name: "URL & Structure Audit",
+    prompt: (content, url) => `You are a technical SEO specialist. Analyze the URL structure and page architecture for ${url}. Return ONLY valid JSON (no markdown) in this exact format:
+{"summary":"<overall assessment>","url_score":<0-100>,"current_url":"${url}","url_issues":["<issue1>","<issue2>"],"slug_analysis":{"current_slug":"<slug from url>","length":<char count of slug>,"has_keywords":true,"has_stop_words":true,"is_lowercase":true,"uses_hyphens":true,"verdict":"<good|needs-work|poor>"},"recommended_slug":"<better-slug-suggestion>","url_depth":{"current_depth":<number of path segments>,"recommendation":"<keep or simplify>","verdict":"<good|too-deep|shallow>"},"breadcrumb_structure":{"recommended":["Home","<Category>","<Page Title>"],"currently_present":true,"schema_needed":true},"technical_issues":["<issue1>","<issue2>"],"canonical_recommendation":"<self-referencing or alternate canonical url>","quick_fixes":["<fix1>","<fix2>","<fix3>"],"priority_actions":["<action1>","<action2>"]}
+CONTENT: ${content.slice(0, 3000)}`
   }
 };
 
@@ -119,7 +125,6 @@ async function runSkill(skillKey, content, url) {
   } catch {
     const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (match) return JSON.parse(match[1].trim());
-    // Try to extract JSON object from response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) return JSON.parse(jsonMatch[0]);
     throw new Error("Could not parse response as JSON");

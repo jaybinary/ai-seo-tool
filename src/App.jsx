@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 const SKILLS = [
@@ -470,10 +470,10 @@ export default function App() {
   const setSkill = (key, update) =>
     setSkillStates(prev => ({ ...prev, [key]: { ...prev[key], ...update } }))
 
-  const runSkill = useCallback(async (skillKey, targetUrl) => {
-    const u = targetUrl || analysisUrl
+  const runSkill = async (skillKey, targetUrl) => {
+    const u = (targetUrl || analysisUrl || '').trim()
     if (!u) return
-    setSkill(skillKey, { status: 'running', data: null, error: null })
+    setSkillStates(prev => ({ ...prev, [skillKey]: { status: 'running', data: null, error: null } }))
     try {
       const res = await fetch('/api/seo-analyze', {
         method: 'POST',
@@ -484,11 +484,11 @@ export default function App() {
       if (!res.ok) throw new Error(json.error || 'Request failed')
       const result = json.results?.[skillKey]
       if (result?.status === 'error') throw new Error(result.error)
-      setSkill(skillKey, { status: 'success', data: result?.data })
+      setSkillStates(prev => ({ ...prev, [skillKey]: { status: 'success', data: result?.data } }))
     } catch (e) {
-      setSkill(skillKey, { status: 'error', error: e.message })
+      setSkillStates(prev => ({ ...prev, [skillKey]: { status: 'error', error: e.message } }))
     }
-  }, [analysisUrl])
+  }
 
   const runAll = async (inputUrl) => {
     const u = (inputUrl || url).trim()

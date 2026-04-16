@@ -557,21 +557,25 @@ export default function App() {
   const activeSkill = SKILLS.find(s => s.key === activeTab)
   const activeState = skillStates[activeTab]
 
+  const goHome = () => {
+    setView('landing')
+    window.history.replaceState(null, '', window.location.pathname)
+    setSkillStates(Object.fromEntries(SKILLS.map(s => [s.key, { status: 'idle', data: null, error: null }])))
+    setAnalysisUrl('')
+    setUrl('')
+  }
+
   // ── Topbar (shared) ──────────────────────────────────────────────────────────
   const Topbar = () => (
     <nav className="topbar">
-      <div className="topbar-logo">📊</div>
-      <span className="topbar-brand">PageIQ</span>
-      <span className="topbar-tagline">AI SEO Intelligence</span>
+      <div className="topbar-logo-wrap" onClick={goHome} style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}>
+        <div className="topbar-logo">📊</div>
+        <span className="topbar-brand">PageIQ</span>
+        <span className="topbar-tagline">AI SEO Intelligence</span>
+      </div>
       <div className="topbar-spacer" />
       {view === 'analyzer' && (
-        <button className="topbar-btn" onClick={() => {
-          setView('landing')
-          window.history.replaceState(null, '', window.location.pathname)
-          setSkillStates(Object.fromEntries(SKILLS.map(s => [s.key, { status: 'idle', data: null, error: null }])))
-          setAnalysisUrl('')
-          setUrl('')
-        }}>← New Audit</button>
+        <button className="topbar-btn" onClick={goHome}>← Home</button>
       )}
       <span className="topbar-pill">AI-Powered</span>
     </nav>
@@ -712,7 +716,14 @@ export default function App() {
       {/* Analyzer hero — URL bar */}
       <div className="analyzer-hero">
         <div className="analyzer-hero-inner">
-          <h2>SEO Audit — {analysisUrl || 'Ready'}</h2>
+          <h2>
+            {analysisUrl
+              ? (() => { try { const u = new URL(analysisUrl); return `${u.hostname}` } catch { return 'SEO Audit' } })()
+              : 'Ready to Audit'}
+          </h2>
+          <p className="analyzer-url-sub">
+            {analysisUrl && <span>{analysisUrl}</span>}
+          </p>
           <p>{isRunningAll ? `Running skill ${progress.done + 1} of ${progress.total}…` : `${completedCount} of 11 skills complete`}</p>
           <div className="url-row">
             <input
@@ -721,10 +732,14 @@ export default function App() {
               placeholder="https://yourwebsite.com/page-to-audit"
               value={url}
               onChange={e => setUrl(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !isRunningAll && runAll()}
+              onKeyDown={e => e.key === 'Enter' && !isRunningAll && runAll(url || analysisUrl)}
               disabled={isRunningAll}
             />
-            <button className="btn-analyze" onClick={() => runAll()} disabled={isRunningAll || !url.trim()}>
+            <button
+              className="btn-analyze"
+              onClick={() => runAll(url.trim() || analysisUrl)}
+              disabled={isRunningAll || (!url.trim() && !analysisUrl)}
+            >
               {isRunningAll ? `${pct}%…` : '▶ Re-Analyze'}
             </button>
           </div>
@@ -750,9 +765,9 @@ export default function App() {
         </div>
       )}
 
-      {/* Score strip */}
+      {/* Score grid */}
       {scoreSkills.length > 0 && (
-        <div className="score-strip">
+        <div className="score-grid-bar">
           {scoreSkills.map(s => {
             const v = skillStates[s.key].data[s.scoreKey]
             const cls = v >= 70 ? 'h' : v >= 40 ? 'm' : 'l'
@@ -808,7 +823,7 @@ export default function App() {
                 <button
                   className="tab-content-run"
                   disabled={activeState.status === 'running' || isRunningAll}
-                  onClick={() => runSkill(activeSkill.key)}
+                  onClick={() => runSkill(activeSkill.key, analysisUrl)}
                 >
                   {activeState.status === 'running' ? 'Running…' : activeState.status === 'success' ? '↺ Re-run' : '▶ Run'}
                 </button>

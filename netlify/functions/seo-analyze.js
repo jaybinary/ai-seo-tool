@@ -69,31 +69,46 @@ CONTENT: ${content.slice(0, 3000)}`
   }
 };
 
-// ─── Call Claude API directly via fetch ──────────────────────────────────────
+// ─── Call Claude API directly via fetch (with retry on 529) ─────────────────
 
-async function callClaude(prompt) {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2000,
-      messages: [{ role: "user", content: prompt }]
-    }),
-    signal: AbortSignal.timeout(25000)
-  });
+async function callClaude(prompt, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 2000,
+        messages: [{ role: "user", content: prompt }]
+      }),
+      signal: AbortSignal.timeout(25000)
+    });
 
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Claude API error ${response.status}: ${err.slice(0, 200)}`);
+    // If overloaded (529) or rate limited (529/529), wait and retry
+    if (response.status === 529 || response.status === 529) {
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, attempt * 2000)); // 2s, 4s
+        continue;
+      }
+    }
+
+    if (!response.ok) {
+      const err = await response.text();
+      // Retry on 529 overloaded or 500 server errors
+      if ((response.status === 529 || response.status >= 500) && attempt < retries) {
+        await new Promise(r => setTimeout(r, attempt * 2000)); // 2s, 4s wait
+        continue;
+      }
+      throw new Error(`Claude API error ${response.status}: ${err.slice(0, 200)}`);
+    }
+
+    const data = await response.json();
+    return data.content[0].text.trim();
   }
-
-  const data = await response.json();
-  return data.content[0].text.trim();
 }
 
 // ─── Fetch page content ───────────────────────────────────────────────────────
@@ -125,6 +140,7 @@ async function runSkill(skillKey, content, url) {
   } catch {
     const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (match) return JSON.parse(match[1].trim());
+    // Try to extract JSON object from response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) return JSON.parse(jsonMatch[0]);
     throw new Error("Could not parse response as JSON");

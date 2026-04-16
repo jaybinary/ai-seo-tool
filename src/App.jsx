@@ -11,13 +11,14 @@ const SKILLS = [
   { key: 'meta',     name: 'Title & Description',        icon: '🎯', desc: 'CTR-optimized meta tag variations',         scoreKey: null,                      action: 'Update your CMS meta title & description with the top suggestion' },
   { key: 'linking',  name: 'Internal Linking Map',       icon: '🔗', desc: 'Internal link opportunities & silo',        scoreKey: null,                      action: 'Add the recommended internal links to your page and linking pages' },
   { key: 'topical',  name: 'Topical Authority Cluster',  icon: '🗺️', desc: 'Pillar + cluster content architecture',     scoreKey: 'topical_authority_score', action: 'Plan and publish the suggested cluster pages over 60-90 days' },
-  { key: 'citation', name: 'AI Citation Optimizer',      icon: '📣', desc: 'Get cited inside AI search engines',        scoreKey: 'citation_score',          action: 'Rewrite key passages using the optimized formats provided' },
+  { key: 'citation',    name: 'AI Citation Optimizer',    icon: '📣', desc: 'Get cited inside AI search engines',        scoreKey: 'citation_score',    action: 'Rewrite key passages using the optimized formats provided' },
+  { key: 'urlstructure', name: 'URL & Structure Audit',  icon: '🔗', desc: 'Slug quality, URL depth & breadcrumb audit', scoreKey: 'url_score',         action: 'Update your URL slug and add breadcrumb schema as recommended' },
 ]
 
 const COLORS = {
   eeat: '#4f46e5', rewrite: '#7c3aed', schema: '#0891b2', querymap: '#059669',
   entities: '#db2777', brief: '#d97706', meta: '#7c3aed', linking: '#0284c7',
-  topical: '#9333ea', citation: '#0369a1'
+  topical: '#9333ea', citation: '#0369a1', urlstructure: '#0f766e'
 }
 
 const WHY_CARDS = [
@@ -297,6 +298,78 @@ function SkillResults({ skillKey, data }) {
         </div>
       )}
       <List items={data.action_items} title="✅ Action Items" />
+    </>
+
+    case 'urlstructure': return <>
+      <ScorePill score={data.url_score} />
+      <Summary text={data.summary} />
+      {data.current_url && (
+        <div className="result-block">
+          <div className="result-block-title">🔗 Current URL</div>
+          <div className="code-box" style={{fontSize:13}}>{data.current_url}</div>
+        </div>
+      )}
+      {data.slug_analysis && (
+        <div className="result-block">
+          <div className="result-block-title">🔍 Slug Analysis</div>
+          <div className="tag-wrap" style={{marginBottom:10}}>
+            <span className="tag">Slug: /{data.slug_analysis.current_slug}</span>
+            <span className="tag">{data.slug_analysis.length} chars</span>
+            <span className={`tag ${data.slug_analysis.verdict === 'good' ? '' : 'tag-red'}`}>
+              {data.slug_analysis.verdict === 'good' ? '✅' : '⚠️'} {data.slug_analysis.verdict}
+            </span>
+            {data.slug_analysis.has_stop_words && <span className="tag tag-yellow">⚠️ Has stop words</span>}
+            {!data.slug_analysis.has_keywords && <span className="tag tag-red">❌ No keywords</span>}
+            {!data.slug_analysis.uses_hyphens && <span className="tag tag-red">❌ Not hyphenated</span>}
+          </div>
+        </div>
+      )}
+      {data.recommended_slug && (
+        <div className="info-card" style={{marginBottom:14}}>
+          <strong>✅ Recommended Slug:</strong><br/>
+          <span style={{fontFamily:'monospace',fontSize:14}}>/{data.recommended_slug}</span>
+        </div>
+      )}
+      {data.url_depth && (
+        <div className="result-block">
+          <div className="result-block-title">📊 URL Depth</div>
+          <div className="tag-wrap">
+            <span className="tag">Depth: {data.url_depth.current_depth} levels</span>
+            <span className={`tag ${data.url_depth.verdict === 'good' ? '' : 'tag-yellow'}`}>{data.url_depth.verdict}</span>
+          </div>
+          {data.url_depth.recommendation && <p style={{fontSize:12,color:'var(--text-2)',marginTop:8}}>{data.url_depth.recommendation}</p>}
+        </div>
+      )}
+      {data.breadcrumb_structure && (
+        <div className="result-block">
+          <div className="result-block-title">🍞 Breadcrumb Structure</div>
+          {data.breadcrumb_structure.recommended?.length > 0 && (
+            <div className="tag-wrap" style={{marginBottom:8}}>
+              {data.breadcrumb_structure.recommended.map((b,i) => (
+                <span key={i} className="tag">{i > 0 ? '› ' : ''}{b}</span>
+              ))}
+            </div>
+          )}
+          <div className="tag-wrap">
+            <span className={`tag ${data.breadcrumb_structure.currently_present ? '' : 'tag-red'}`}>
+              {data.breadcrumb_structure.currently_present ? '✅ Breadcrumbs present' : '❌ No breadcrumbs found'}
+            </span>
+            {data.breadcrumb_structure.schema_needed && (
+              <span className="tag tag-yellow">⚠️ BreadcrumbList schema needed</span>
+            )}
+          </div>
+        </div>
+      )}
+      <List items={data.url_issues} title="⚠️ URL Issues" />
+      <List items={data.technical_issues} title="🔧 Technical Issues" />
+      {data.canonical_recommendation && (
+        <div className="result-block">
+          <div className="result-block-title">🔁 Canonical Recommendation</div>
+          <div className="code-box" style={{fontSize:12}}>{data.canonical_recommendation}</div>
+        </div>
+      )}
+      <List items={data.quick_fixes} title="⚡ Quick Fixes" />
+      <List items={data.priority_actions} title="🎯 Priority Actions" />
     </>
 
     default: return <div className="code-box">{JSON.stringify(data,null,2).slice(0,500)}</div>

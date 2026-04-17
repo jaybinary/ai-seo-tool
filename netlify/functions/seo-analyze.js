@@ -2,17 +2,17 @@
 
 // token limits per skill: [contentChars, maxTokens]
 const SKILL_LIMITS = {
-  eeat:         [3000, 1500],
+  eeat:         [3000, 1800],
   rewrite:      [3000, 2000],
-  schema:       [2000, 1500],
-  querymap:     [2000, 1200],
-  entities:     [2500, 1200],
-  brief:        [2500, 1500],
-  meta:         [1000,  800],
-  linking:      [1500, 1000],
-  topical:      [2000, 1200],
-  citation:     [2000, 1200],
-  urlstructure: [ 500,  800],
+  schema:       [2000, 1800],
+  querymap:     [2000, 1400],
+  entities:     [2500, 1800],  // increased — was truncating arrays
+  brief:        [2500, 1800],
+  meta:         [1000, 1400],  // increased — was truncating
+  linking:      [1500, 1400],  // increased — was truncating
+  topical:      [2000, 1800],  // increased — was truncating arrays
+  citation:     [2000, 1400],
+  urlstructure: [ 500,  900],
 };
 
 const SKILL_PROMPTS = {
@@ -149,19 +149,35 @@ async function fetchPageContent(url) {
 async function runSkill(skillKey, content, url) {
   const skill = SKILL_PROMPTS[skillKey];
   if (!skill) throw new Error(`Unknown skill: ${skillKey}`);
-  const [contentChars, maxTokens] = SKILL_LIMITS[skillKey] || [2000, 1200];
+  const [contentChars, maxTokens] = SKILL_LIMITS[skillKey] || [2000, 1400];
   const trimmedContent = content.slice(0, contentChars);
   const text = await callClaude(skill.prompt(trimmedContent, url), maxTokens);
-  try {
-    return JSON.parse(text);
-  } catch {
-    const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (match) return JSON.parse(match[1].trim());
-    // Try to extract JSON object from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) return JSON.parse(jsonMatch[0]);
-    throw new Error("Could not parse response as JSON");
+  return parseJSON(text);
+}
+
+function parseJSON(text) {
+  // Try 1: direct parse
+  try { return JSON.parse(text); } catch {}
+
+  // Try 2: strip markdown code fences
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenced) { try { return JSON.parse(fenced[1].trim()); } catch {} }
+
+  // Try 3: extract the outermost JSON object
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    const raw = jsonMatch[0];
+    // Direct parse of extracted object
+    try { return JSON.parse(raw); } catch {}
+    // Clean trailing commas before } or ] (common Claude issue)
+    const cleaned = raw.replace(/,(\s*[}\]])/g, '$1');
+    try { return JSON.parse(cleaned); } catch {}
+    // Remove control characters and retry
+    const sanitised = cleaned.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ');
+    try { return JSON.parse(sanitised); } catch {}
   }
+
+  throw new Error("Could not parse response as JSON");
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────────

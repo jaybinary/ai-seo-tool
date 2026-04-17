@@ -1,92 +1,196 @@
-// localStorage-based auth helpers (no backend needed for MVP)
+import { supabase } from './supabase.js'
 
-const AUTH_KEY = 'pageiq_user';
-const HISTORY_KEY = 'pageiq_history';
+// ─── AUTH ───────────────────────────────────────────────
 
-export function getUser() {
-  try {
-    const raw = localStorage.getItem(AUTH_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
+export async function signup(name, email, password) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: name }
+    }
+  })
+  if (error) throw error
+  return data
+}
+
+export async function login(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  })
+  if (error) throw error
+  return data
+}
+
+export async function logout() {
+  const { error } = await supabase.auth.signOut()
+  if (error) throw error
+}
+
+export async function getUser() {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  // Get full profile from public.users table
+  const { data: profile } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+
+  return profile || { id: user.id, email: user.email, full_name: '', plan: 'free' }
+}
+
+export async function isLoggedIn() {
+  const { data: { session } } = await supabase.auth.getSession()
+  return !!session
+}
+
+// ─── AUDIT HISTORY ──────────────────────────────────────
+
+const SCORE_KEYS = {
+  eeat: 'score',
+  rewrite: 'ai_readability_score',
+  querymap: 'total_opportunity_score',
+  entities: 'topic_coverage_score',
+  topical: 'topical_authority_score',
+  citation: 'citation_score',
+  urlstructure: 'url_score'
+}
+
+function extractScore(key, data) {
+  const scoreKey = SCORE_KEYS[key]
+  if (!scoreKey || !data) return null
+  const score = data[scoreKey]
+  return typeof score === 'number' ? Math.round(score) : null
+}
+
+function computeOverallScore(skillStates) {
+  const scores = []
+  Object.entries(skillStates).forEach(([key, state]) => {
+    if (state?.result) {
+      const s = extractScore(key, state.result)
+      if (s !== null) scores.push(s)
+    }
+  })
+  if (!scores.length) return null
+  return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+}
+
+function computeInsights(skillStates) {
+  const topIssues = []
+  const quickWins = []
+  const strengths = []
+  let criticalCount = 0
+  let warningCount = 0
+
+  Object.entries(skillStates).forEach(([key, state]) => {
+    if (!state?.result) return
+    const score = extractScore(key, state.result)
+    if (score === null) return
+
+    const skillNames = {
+      eeat: 'E-E-A-T', rewrite: 'AI Readability', schema: 'Schema Markup',
+      querymap: 'Query Mapping', entities: 'Entity Coverage', brief: 'Content Brief',
+      meta: 'Meta Tags', linking: 'Internal Linking', topical: 'Topical Authority',
+      citation: 'Citation Quality', urlstructure: 'URL Structure'
+    }
+    const name = skillNames[key] || key
+
+    if (score < 50) {
+      criticalCount++
+      topIssues.push(`${name} needs urgent improvement (${score}/100)`)
+    } else if (score < 70) {
+      warningCount++
+      quickWins.push(`Improve ${name} for quick gains (${score}/100)`)
+    } else {
+      strengths.push(`Strong ${name} (${score}/100)`)
+    }
+  })
+
+  return {
+    critical_count: criticalCount,
+    warning_count: warningCount,
+    top_issues: topIssues.slice(0, 3),
+    quick_wins: quickWins.slice(0, 3),
+    strengths: strengths.slice(0, 3)
   }
 }
 
-export function isLoggedIn() {
-  return !!getUser();
-}
+export async function saveAudit(url, skillStates) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
 
-export function login(email, password) {
-  // In a real app this would hit an API. For MVP we simulate auth.
-  if (!email || !password) return { error: 'Email and password required' };
-  if (password.length < 6) return { error: 'Password must be at least 6 characters' };
+  const { normalizeUrl, extractDomain } = await import('./supabase.js')
+  const overallScore = computeOverallScore(skillStates)
+  const insights = computeInsights(skillStates)
+  const skillsRun = Object.entries(skillStates)
+    .filter(([, s]) => s?.result)
+    .map(([k]) => k)
 
-  // Check if existing user in localStorage
-  const existing = localStorage.getItem('pageiq_account_' + email);
-  if (existing) {
-    const account = JSON.parse(existing);
-    if (account.password !== password) return { error: 'Invalid password' };
-    const user = { email, name: account.name, plan: account.plan || 'free', createdAt: account.createdAt };
-    localStorage.setItem(AUTH_KEY, JSON.stringify(user));
-    return { user };
+  // Insert master audit record
+  const { data: audit, error: auditError } = await supabase
+    .from('audits')
+    .insert({
+      user_id: user.id,
+      url,
+      url_normalized: normalizeUrl(url),
+      domain: extractDomain(url),
+      status: 'complete',
+      skills_run: skillsRun,
+      overall_score: overallScore,
+      computed_insights: insights,
+      completed_at: new Date().toISOString()
+    })
+    .select()
+    .single()
+
+  if (auditError) { console.error('Error saving audit:', auditError); return null }
+
+  // Insert one row per skill result
+  const resultRows = Object.entries(skillStates)
+    .filter(([, s]) => s?.result || s?.error)
+    .map(([key, state]) => ({
+      audit_id: audit.id,
+      skill_key: key,
+      status: state.error ? 'error' : 'success',
+      data: state.result || null,
+      score: extractScore(key, state.result),
+      error_message: state.error || null
+    }))
+
+  if (resultRows.length) {
+    const { error: resultsError } = await supabase
+      .from('audit_results')
+      .insert(resultRows)
+    if (resultsError) console.error('Error saving audit results:', resultsError)
   }
-  return { error: 'No account found. Please sign up.' };
+
+  return audit
 }
 
-export function signup(name, email, password) {
-  if (!name || !email || !password) return { error: 'All fields required' };
-  if (password.length < 6) return { error: 'Password must be at least 6 characters' };
-  if (!email.includes('@')) return { error: 'Invalid email address' };
+export async function getHistory() {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
 
-  const existing = localStorage.getItem('pageiq_account_' + email);
-  if (existing) return { error: 'Account already exists. Please log in.' };
+  const { data, error } = await supabase
+    .from('audits')
+    .select('*')
+    .eq('user_id', user.id)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(50)
 
-  const account = { name, email, password, plan: 'free', createdAt: new Date().toISOString() };
-  localStorage.setItem('pageiq_account_' + email, JSON.stringify(account));
-
-  const user = { email, name, plan: 'free', createdAt: account.createdAt };
-  localStorage.setItem(AUTH_KEY, JSON.stringify(user));
-  return { user };
+  if (error) { console.error('Error fetching history:', error); return [] }
+  return data || []
 }
 
-export function logout() {
-  localStorage.removeItem(AUTH_KEY);
-}
+export async function deleteAudit(id) {
+  const { error } = await supabase
+    .from('audits')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id)
 
-// ── Audit history ─────────────────────────────────────────────────────────────
-
-export function getHistory() {
-  try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function saveAudit(url, results) {
-  const history = getHistory();
-  const entry = {
-    id: Date.now().toString(),
-    url,
-    domain: (() => { try { return new URL(url).hostname; } catch { return url; } })(),
-    analyzedAt: new Date().toISOString(),
-    skillCount: Object.keys(results).length,
-    overallScore: (() => {
-      const scores = Object.values(results)
-        .filter(r => r.status === 'success' && r.data?.score != null)
-        .map(r => r.data.score);
-      return scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-    })(),
-    results,
-  };
-  history.unshift(entry);
-  // Keep last 20 audits
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 20)));
-  return entry;
-}
-
-export function deleteAudit(id) {
-  const history = getHistory().filter(h => h.id !== id);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  if (error) console.error('Error deleting audit:', error)
 }

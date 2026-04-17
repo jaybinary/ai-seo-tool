@@ -27,14 +27,15 @@ export default function Footer() {
           </div>
           <div className="footer-col">
             <h4 className="footer-col-heading">Company</h4>
-            <a href="#" className="footer-link">About</a>
-            <a href="#" className="footer-link">Blog</a>
-            <a href="#" className="footer-link">Contact</a>
+            <Link to="/about" className="footer-link">About</Link>
+            <Link to="/blog" className="footer-link">Blog</Link>
+            <Link to="/contact" className="footer-link">Contact</Link>
           </div>
           <div className="footer-col">
             <h4 className="footer-col-heading">Legal</h4>
-            <a href="#" className="footer-link">Privacy Policy</a>
-            <a href="#" className="footer-link">Terms of Service</a>
+            <Link to="/legal" className="footer-link">Legal Hub</Link>
+            <Link to="/privacy" className="footer-link">Privacy Policy</Link>
+            <Link to="/terms" className="footer-link">Terms of Service</Link>
           </div>
         </div>
       </div>

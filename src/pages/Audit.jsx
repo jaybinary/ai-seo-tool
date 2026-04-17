@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
-import { SKILLS, COLORS } from '../utils/skills';
-import { getUser, saveAudit } from '../utils/auth';
+import { saveAudit } from '../utils/auth';
+import { useAuth } from '../hooks/useAuth';
 
 // ── Score Pill ────────────────────────────────────────────────────────────────
 function ScorePill({ score }) {
@@ -422,7 +422,7 @@ export default function Audit() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const user = getUser();
+  const { user } = useAuth();
 
   const initStates = () => Object.fromEntries(SKILLS.map(s => [s.key, { status: 'idle', data: null, error: null }]));
 
@@ -529,11 +529,14 @@ export default function Audit() {
     }
 
     // Save to history if logged in
-    if (user) {
-      saveAudit(u, states);
-      setSavedNotice(true);
-      setTimeout(() => setSavedNotice(false), 3000);
-    }
+if (user) {
+  try {
+    await saveAudit(u, states);
+    setSavedNotice(true);   // stays visible permanently — no auto-dismiss
+  } catch (e) {
+    console.error('Save failed:', e);
+  }
+}
 
     const encoded = btoa(JSON.stringify({ url: u, states }));
     window.history.replaceState(null, '', `/audit#report=${encoded}`);

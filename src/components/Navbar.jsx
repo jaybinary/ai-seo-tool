@@ -1,28 +1,34 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { getUser, logout } from '../utils/auth';
+import { logout } from '../utils/auth';
+import { useAuth } from '../hooks/useAuth';
 
 export default function Navbar() {
-  const user = getUser();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     navigate('/');
     setMenuOpen(false);
   }
 
   const isActive = (path) => location.pathname === path;
 
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || '';
+  const avatarLetter = displayName?.[0]?.toUpperCase() || '?';
+  const plan = profile?.plan || 'free';
+  const planLabel = plan === 'agency' ? '🏢 Agency' : plan === 'pro' ? '⚡ Pro' : '🆓 Free';
+
   return (
     <nav className="navbar">
       <div className="navbar-inner">
+
         {/* Logo */}
         <Link to="/" className="navbar-logo">
-          <img src="/logo.png" alt="PageIQ" className="navbar-logo-img" />
-          <span className="navbar-logo-fallback">PageIQ</span>
+          <img src="/logo.png" alt="PageIQ" />
         </Link>
 
         {/* Desktop links */}
@@ -36,59 +42,76 @@ export default function Navbar() {
         </div>
 
         {/* Desktop auth */}
-        <div className="navbar-auth">
+        <div className="navbar-auth" style={{ flexShrink: 0 }}>
           {user ? (
             <>
-              <Link to="/audit" className="btn-nav-primary">New Audit</Link>
-              <div className="navbar-user-menu">
-                <button className="navbar-user-btn" onClick={() => setMenuOpen(!menuOpen)}>
-                  <div className="navbar-avatar">{user.name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}</div>
-                  <span className="navbar-user-name">{user.name || user.email}</span>
-                  <span className="navbar-chevron">▾</span>
+              <Link to="/audit" className="btn-primary" style={{ fontSize: 13, padding: '7px 14px' }}>
+                + New Audit
+              </Link>
+              <div className="navbar-user" style={{ position: 'relative' }}>
+                <button
+                  className="navbar-avatar"
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  title={displayName}
+                >
+                  {avatarLetter}
                 </button>
                 {menuOpen && (
                   <div className="navbar-dropdown">
-                    <div className="navbar-dropdown-email">{user.email}</div>
-                    <div className="navbar-dropdown-plan">{user.plan === 'pro' ? '⚡ Pro' : user.plan === 'agency' ? '🏢 Agency' : '🆓 Free'} Plan</div>
-                    <hr className="navbar-dropdown-divider" />
-                    <Link to="/dashboard" className="navbar-dropdown-item" onClick={() => setMenuOpen(false)}>Dashboard</Link>
-                    <Link to="/pricing" className="navbar-dropdown-item" onClick={() => setMenuOpen(false)}>Upgrade Plan</Link>
-                    <hr className="navbar-dropdown-divider" />
-                    <button className="navbar-dropdown-item navbar-dropdown-logout" onClick={handleLogout}>Log out</button>
+                    <div className="navbar-dropdown-header">
+                      <div className="navbar-dropdown-name">{displayName}</div>
+                      <div className="navbar-dropdown-email">{user.email}</div>
+                      <span className="navbar-dropdown-plan">{planLabel}</span>
+                    </div>
+                    <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+                    <Link to="/audit" onClick={() => setMenuOpen(false)}>New Audit</Link>
+                    <Link to="/pricing" onClick={() => setMenuOpen(false)}>Upgrade Plan</Link>
+                    <button onClick={handleLogout}>Log out</button>
                   </div>
                 )}
               </div>
             </>
           ) : (
             <>
-              <Link to="/login" className="btn-nav-ghost">Log in</Link>
-              <Link to="/signup" className="btn-nav-primary">Get Started Free</Link>
+              <Link to="/login" className="btn-ghost">Log in</Link>
+              <Link to="/signup" className="btn-primary">Get Started Free</Link>
             </>
           )}
         </div>
 
         {/* Mobile hamburger */}
-        <button className="navbar-hamburger" onClick={() => setMenuOpen(!menuOpen)}>
+        <button className="navbar-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu">
           <span></span><span></span><span></span>
         </button>
+
       </div>
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="navbar-mobile-menu">
-          <Link to="/" className="navbar-mobile-link" onClick={() => setMenuOpen(false)}>Home</Link>
-          <Link to="/about" className="navbar-mobile-link" onClick={() => setMenuOpen(false)}>About</Link>
-          <Link to="/pricing" className="navbar-mobile-link" onClick={() => setMenuOpen(false)}>Pricing</Link>
+        <div style={{
+          background: '#fff', borderTop: '1px solid var(--border)',
+          padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 4
+        }}>
+          <Link to="/" style={mobileLink} onClick={() => setMenuOpen(false)}>Home</Link>
+          <Link to="/about" style={mobileLink} onClick={() => setMenuOpen(false)}>About</Link>
+          <Link to="/pricing" style={mobileLink} onClick={() => setMenuOpen(false)}>Pricing</Link>
           {user ? (
             <>
-              <Link to="/dashboard" className="navbar-mobile-link" onClick={() => setMenuOpen(false)}>Dashboard</Link>
-              <Link to="/audit" className="navbar-mobile-link" onClick={() => setMenuOpen(false)}>New Audit</Link>
-              <button className="navbar-mobile-link navbar-mobile-logout" onClick={handleLogout}>Log out</button>
+              <Link to="/dashboard" style={mobileLink} onClick={() => setMenuOpen(false)}>Dashboard</Link>
+              <Link to="/audit" style={mobileLink} onClick={() => setMenuOpen(false)}>New Audit</Link>
+              <button
+                onClick={handleLogout}
+                style={{ ...mobileLink, background: 'none', border: 'none', textAlign: 'left', color: 'var(--red)', cursor: 'pointer' }}
+              >
+                Log out
+              </button>
             </>
           ) : (
             <>
-              <Link to="/login" className="navbar-mobile-link" onClick={() => setMenuOpen(false)}>Log in</Link>
-              <Link to="/signup" className="navbar-mobile-link navbar-mobile-cta" onClick={() => setMenuOpen(false)}>Get Started Free</Link>
+              <Link to="/login" style={mobileLink} onClick={() => setMenuOpen(false)}>Log in</Link>
+              <Link to="/signup" style={{ ...mobileLink, color: 'var(--accent)', fontWeight: 700 }} onClick={() => setMenuOpen(false)}>
+                Get Started Free
+              </Link>
             </>
           )}
         </div>
@@ -96,3 +119,8 @@ export default function Navbar() {
     </nav>
   );
 }
+
+const mobileLink = {
+  display: 'block', padding: '10px 12px', borderRadius: 8,
+  fontSize: 14, fontWeight: 500, color: 'var(--text-2)',
+};

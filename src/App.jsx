@@ -78,6 +78,10 @@ export default function App() {
       <Route path="/privacy" element={
         <PageLayout><PrivacyPolicy /></PageLayout>
       } />
+      {/* Alias for /privacy-policy → same component */}
+      <Route path="/privacy-policy" element={
+        <PageLayout><PrivacyPolicy /></PageLayout>
+      } />
       <Route path="/terms" element={
         <PageLayout><TermsOfService /></PageLayout>
       } />

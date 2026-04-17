@@ -242,7 +242,8 @@ img { max-width: 100%; display: block; }
 }
 .skill-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
 .skill-card-icon { font-size: 28px; margin-bottom: 10px; }
-.skill-card-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+.skill-card-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.skill-card-desc { font-size: 11px; color: var(--text-2); line-height: 1.5; margin-bottom: 10px; }
 .skill-card-bar { height: 3px; border-radius: 2px; background: var(--skill-color); opacity: .4; }
 
 /* How it works */

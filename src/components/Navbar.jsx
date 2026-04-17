@@ -3,10 +3,19 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { logout } from '../utils/auth';
 import { useAuth } from '../hooks/useAuth';
 
+// Desktop nav links (order matches user spec)
+const NAV_LINKS = [
+  { label: 'Home',     to: '/',        exact: true },
+  { label: 'Blog',     to: '/blog',    startsWith: true },
+  { label: 'Pricing',  to: '/pricing' },
+  { label: 'About',    to: '/about' },
+  { label: 'Contact',  to: '/contact' },
+];
+
 export default function Navbar() {
   const { user, profile } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate             = useNavigate();
+  const location             = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
   async function handleLogout() {
@@ -15,35 +24,50 @@ export default function Navbar() {
     setMenuOpen(false);
   }
 
-  const isActive = (path) => location.pathname === path;
+  function isActive(link) {
+    if (link.exact)       return location.pathname === link.to;
+    if (link.startsWith)  return location.pathname.startsWith(link.to);
+    return location.pathname === link.to;
+  }
 
-  const displayName = profile?.full_name || user?.email?.split('@')[0] || '';
+  const displayName  = profile?.full_name || user?.email?.split('@')[0] || '';
   const avatarLetter = displayName?.[0]?.toUpperCase() || '?';
-  const plan = profile?.plan || 'free';
-  const planLabel = plan === 'agency' ? '🏢 Agency' : plan === 'pro' ? '⚡ Pro' : '🆓 Free';
+  const plan         = profile?.plan || 'free';
+  const planLabel    = plan === 'agency' ? '🏢 Agency' : plan === 'pro' ? '⚡ Pro' : '🆓 Free';
+
+  function close() { setMenuOpen(false); }
 
   return (
     <nav className="navbar">
       <div className="navbar-inner">
 
-        {/* Logo */}
-        <Link to="/" className="navbar-logo">
+        {/* ── Logo ── */}
+        <Link to="/" className="navbar-logo" onClick={close}>
           <img src="/logo.png" alt="PageIQ" />
         </Link>
 
-        {/* Desktop links */}
+        {/* ── Desktop links ── */}
         <div className="navbar-links">
-          <Link to="/" className={`navbar-link ${isActive('/') ? 'active' : ''}`}>Home</Link>
-          <Link to="/about" className={`navbar-link ${isActive('/about') ? 'active' : ''}`}>About</Link>
-          <Link to="/blog" className={`navbar-link ${location.pathname.startsWith('/blog') ? 'active' : ''}`}>Blog</Link>
-          <Link to="/pricing" className={`navbar-link ${isActive('/pricing') ? 'active' : ''}`}>Pricing</Link>
-          <Link to="/contact" className={`navbar-link ${isActive('/contact') ? 'active' : ''}`}>Contact</Link>
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className={`navbar-link ${isActive(link) ? 'active' : ''}`}
+            >
+              {link.label}
+            </Link>
+          ))}
           {user && (
-            <Link to="/dashboard" className={`navbar-link ${isActive('/dashboard') ? 'active' : ''}`}>Dashboard</Link>
+            <Link
+              to="/dashboard"
+              className={`navbar-link ${location.pathname === '/dashboard' ? 'active' : ''}`}
+            >
+              Dashboard
+            </Link>
           )}
         </div>
 
-        {/* Desktop auth */}
+        {/* ── Desktop auth ── */}
         <div className="navbar-auth" style={{ flexShrink: 0 }}>
           {user ? (
             <>
@@ -65,9 +89,9 @@ export default function Navbar() {
                       <div className="navbar-dropdown-email">{user.email}</div>
                       <span className="navbar-dropdown-plan">{planLabel}</span>
                     </div>
-                    <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
-                    <Link to="/audit" onClick={() => setMenuOpen(false)}>New Audit</Link>
-                    <Link to="/pricing" onClick={() => setMenuOpen(false)}>Upgrade Plan</Link>
+                    <Link to="/dashboard"  onClick={close}>Dashboard</Link>
+                    <Link to="/audit"      onClick={close}>New Audit</Link>
+                    <Link to="/pricing"    onClick={close}>Upgrade Plan</Link>
                     <button onClick={handleLogout}>Log out</button>
                   </div>
                 )}
@@ -75,34 +99,56 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link to="/login" className="btn-ghost">Log in</Link>
+              <Link to="/login"  className="btn-ghost">Log in</Link>
               <Link to="/signup" className="btn-primary">Get Started Free</Link>
             </>
           )}
         </div>
 
-        {/* Mobile hamburger */}
-        <button className="navbar-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu">
+        {/* ── Hamburger ── */}
+        <button
+          className="navbar-hamburger"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle menu"
+          aria-expanded={menuOpen}
+        >
           <span></span><span></span><span></span>
         </button>
 
       </div>
 
-      {/* Mobile menu */}
+      {/* ── Mobile menu ── */}
       {menuOpen && (
-        <div style={{
-          background: '#fff', borderTop: '1px solid var(--border)',
-          padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 4
-        }}>
-          <Link to="/" style={mobileLink} onClick={() => setMenuOpen(false)}>Home</Link>
-          <Link to="/about" style={mobileLink} onClick={() => setMenuOpen(false)}>About</Link>
-          <Link to="/blog" style={mobileLink} onClick={() => setMenuOpen(false)}>Blog</Link>
-          <Link to="/pricing" style={mobileLink} onClick={() => setMenuOpen(false)}>Pricing</Link>
-          <Link to="/contact" style={mobileLink} onClick={() => setMenuOpen(false)}>Contact</Link>
+        <div className="navbar-mobile-menu">
+
+          {/* Nav links */}
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              style={{
+                ...mobileLink,
+                ...(isActive(link) ? { color: 'var(--accent)', fontWeight: 700 } : {}),
+              }}
+              onClick={close}
+            >
+              {link.label}
+            </Link>
+          ))}
+
+          {user && (
+            <Link to="/dashboard" style={mobileLink} onClick={close}>Dashboard</Link>
+          )}
+
+          {/* Divider */}
+          <div style={{ height: 1, background: 'var(--border)', margin: '8px 0' }} />
+
+          {/* Auth */}
           {user ? (
             <>
-              <Link to="/dashboard" style={mobileLink} onClick={() => setMenuOpen(false)}>Dashboard</Link>
-              <Link to="/audit" style={mobileLink} onClick={() => setMenuOpen(false)}>New Audit</Link>
+              <Link to="/audit" style={{ ...mobileLink, color: 'var(--accent)', fontWeight: 700 }} onClick={close}>
+                + New Audit
+              </Link>
               <button
                 onClick={handleLogout}
                 style={{ ...mobileLink, background: 'none', border: 'none', textAlign: 'left', color: 'var(--red)', cursor: 'pointer' }}
@@ -112,12 +158,13 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link to="/login" style={mobileLink} onClick={() => setMenuOpen(false)}>Log in</Link>
-              <Link to="/signup" style={{ ...mobileLink, color: 'var(--accent)', fontWeight: 700 }} onClick={() => setMenuOpen(false)}>
-                Get Started Free
+              <Link to="/login"  style={mobileLink} onClick={close}>Log in</Link>
+              <Link to="/signup" style={{ ...mobileLink, color: 'var(--accent)', fontWeight: 700 }} onClick={close}>
+                Get Started Free →
               </Link>
             </>
           )}
+
         </div>
       )}
     </nav>

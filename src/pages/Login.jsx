@@ -1,78 +1,67 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../utils/auth';
+import { useNavigate, Link } from 'react-router-dom';
+import { login } from '../utils/auth.js';
 
 export default function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const result = login(email.trim().toLowerCase(), password);
-    setLoading(false);
-    if (result.error) {
-      setError(result.error);
-    } else {
+    try {
+      await login(email, password);
       navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <Link to="/" className="auth-logo-link">
-          <img src="/logo.png" alt="PageIQ" className="auth-logo-img" />
-          <span className="auth-logo-fallback">PageIQ</span>
-        </Link>
-
-        <h1 className="auth-heading">Welcome back</h1>
-        <p className="auth-sub">Log in to access your dashboard and saved reports.</p>
+        <h1>Welcome back</h1>
+        <p className="auth-sub">Sign in to your PageIQ account</p>
 
         {error && <div className="auth-error">{error}</div>}
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="auth-field">
-            <label className="auth-label">Email</label>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="form-group">
+            <label>Email</label>
             <input
-              className="auth-input"
               type="email"
-              placeholder="you@example.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
+              placeholder="you@example.com"
               required
               autoFocus
             />
           </div>
-
-          <div className="auth-field">
-            <label className="auth-label">Password</label>
+          <div className="form-group">
+            <label>Password</label>
             <input
-              className="auth-input"
               type="password"
-              placeholder="••••••••"
               value={password}
               onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
               required
             />
           </div>
-
-          <button className="auth-submit" type="submit" disabled={loading}>
-            {loading ? 'Logging in…' : 'Log in →'}
+          <button type="submit" className="btn-primary btn-full" disabled={loading}>
+            {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
 
-        <p className="auth-switch">
-          Don't have an account? <Link to="/signup" className="auth-switch-link">Sign up free</Link>
-        </p>
-
-        <div className="auth-divider">or</div>
-
-        <Link to="/audit" className="auth-guest-link">Continue without account →</Link>
+        <div className="auth-footer">
+          <p>Don't have an account? <Link to="/signup">Sign up free</Link></p>
+          <p><Link to="/audit">Continue without account →</Link></p>
+        </div>
       </div>
     </div>
   );

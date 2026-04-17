@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import About from './pages/About';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
+import Contact from './pages/Contact';
 import Pricing from './pages/Pricing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -51,6 +52,9 @@ export default function App() {
       } />
       <Route path="/blog/:slug" element={
         <PageLayout><BlogPost /></PageLayout>
+      } />
+      <Route path="/contact" element={
+        <PageLayout><Contact /></PageLayout>
       } />
       <Route path="/pricing" element={
         <PageLayout><Pricing /></PageLayout>

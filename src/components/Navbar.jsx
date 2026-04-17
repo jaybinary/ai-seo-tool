@@ -1,95 +1,98 @@
-import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { logout } from '../utils/auth'
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { getUser, logout } from '../utils/auth';
 
 export default function Navbar() {
-  const { user, profile, loading } = useAuth()
-  const navigate = useNavigate()
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const dropdownRef = useRef(null)
+  const user = getUser();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClick(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
-
-  async function handleLogout() {
-    await logout()
-    setDropdownOpen(false)
-    navigate('/')
+  function handleLogout() {
+    logout();
+    navigate('/');
+    setMenuOpen(false);
   }
 
-  const initials = profile?.full_name
-    ? profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : user?.email?.[0]?.toUpperCase() || '?'
+  const isActive = (path) => location.pathname === path;
 
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        {/* Logo — image already contains "PageIQ" text */}
+        {/* Logo */}
         <Link to="/" className="navbar-logo">
-          <img src="/logo.png" alt="PageIQ" />
+          <img src="/logo.png" alt="PageIQ" className="navbar-logo-img" />
+          <span className="navbar-logo-fallback">PageIQ</span>
         </Link>
 
-        {/* Nav links — centered via margin: 0 auto in CSS */}
+        {/* Desktop links */}
         <div className="navbar-links">
-          <Link to="/" className="navbar-link">Home</Link>
-          <Link to="/audit" className="navbar-link">Audit</Link>
-          <Link to="/pricing" className="navbar-link">Pricing</Link>
+          <Link to="/" className={`navbar-link ${isActive('/') ? 'active' : ''}`}>Home</Link>
+          <Link to="/about" className={`navbar-link ${isActive('/about') ? 'active' : ''}`}>About</Link>
+          <Link to="/pricing" className={`navbar-link ${isActive('/pricing') ? 'active' : ''}`}>Pricing</Link>
+          {user && (
+            <Link to="/dashboard" className={`navbar-link ${isActive('/dashboard') ? 'active' : ''}`}>Dashboard</Link>
+          )}
         </div>
 
-        {/* Auth */}
+        {/* Desktop auth */}
         <div className="navbar-auth">
-          {loading ? null : user ? (
-            <div className="navbar-user" ref={dropdownRef}>
-              <button
-                className="navbar-avatar"
-                onClick={() => setDropdownOpen(o => !o)}
-                aria-label="Account menu"
-              >
-                {initials}
-              </button>
-
-              {dropdownOpen && (
-                <div className="navbar-dropdown">
-                  <div className="navbar-dropdown-header">
-                    <div className="navbar-dropdown-name">
-                      {profile?.full_name || 'User'}
-                    </div>
+          {user ? (
+            <>
+              <Link to="/audit" className="btn-nav-primary">New Audit</Link>
+              <div className="navbar-user-menu">
+                <button className="navbar-user-btn" onClick={() => setMenuOpen(!menuOpen)}>
+                  <div className="navbar-avatar">{user.name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}</div>
+                  <span className="navbar-user-name">{user.name || user.email}</span>
+                  <span className="navbar-chevron">▾</span>
+                </button>
+                {menuOpen && (
+                  <div className="navbar-dropdown">
                     <div className="navbar-dropdown-email">{user.email}</div>
-                    <span className="navbar-dropdown-plan">
-                      {profile?.plan || 'free'}
-                    </span>
+                    <div className="navbar-dropdown-plan">{user.plan === 'pro' ? '⚡ Pro' : user.plan === 'agency' ? '🏢 Agency' : '🆓 Free'} Plan</div>
+                    <hr className="navbar-dropdown-divider" />
+                    <Link to="/dashboard" className="navbar-dropdown-item" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+                    <Link to="/pricing" className="navbar-dropdown-item" onClick={() => setMenuOpen(false)}>Upgrade Plan</Link>
+                    <hr className="navbar-dropdown-divider" />
+                    <button className="navbar-dropdown-item navbar-dropdown-logout" onClick={handleLogout}>Log out</button>
                   </div>
-                  <Link to="/dashboard" onClick={() => setDropdownOpen(false)}>
-                    📊 Dashboard
-                  </Link>
-                  <button onClick={handleLogout}>
-                    🚪 Sign out
-                  </button>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </>
           ) : (
             <>
-              <Link to="/login" className="btn-ghost">Sign in</Link>
-              <Link to="/signup" className="btn-primary">Get started</Link>
+              <Link to="/login" className="btn-nav-ghost">Log in</Link>
+              <Link to="/signup" className="btn-nav-primary">Get Started Free</Link>
             </>
           )}
         </div>
 
         {/* Mobile hamburger */}
-        <button className="navbar-hamburger" aria-label="Menu">
-          <span /><span /><span />
+        <button className="navbar-hamburger" onClick={() => setMenuOpen(!menuOpen)}>
+          <span></span><span></span><span></span>
         </button>
       </div>
+
+      {/* Mobile menu */}
+      {menuOpen && (
+        <div className="navbar-mobile-menu">
+          <Link to="/" className="navbar-mobile-link" onClick={() => setMenuOpen(false)}>Home</Link>
+          <Link to="/about" className="navbar-mobile-link" onClick={() => setMenuOpen(false)}>About</Link>
+          <Link to="/pricing" className="navbar-mobile-link" onClick={() => setMenuOpen(false)}>Pricing</Link>
+          {user ? (
+            <>
+              <Link to="/dashboard" className="navbar-mobile-link" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+              <Link to="/audit" className="navbar-mobile-link" onClick={() => setMenuOpen(false)}>New Audit</Link>
+              <button className="navbar-mobile-link navbar-mobile-logout" onClick={handleLogout}>Log out</button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="navbar-mobile-link" onClick={() => setMenuOpen(false)}>Log in</Link>
+              <Link to="/signup" className="navbar-mobile-link navbar-mobile-cta" onClick={() => setMenuOpen(false)}>Get Started Free</Link>
+            </>
+          )}
+        </div>
+      )}
     </nav>
-  )
+  );
 }

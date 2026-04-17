@@ -4,6 +4,8 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import About from './pages/About';
+import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
 import Pricing from './pages/Pricing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -43,6 +45,12 @@ export default function App() {
       } />
       <Route path="/about" element={
         <PageLayout><About /></PageLayout>
+      } />
+      <Route path="/blog" element={
+        <PageLayout><Blog /></PageLayout>
+      } />
+      <Route path="/blog/:slug" element={
+        <PageLayout><BlogPost /></PageLayout>
       } />
       <Route path="/pricing" element={
         <PageLayout><Pricing /></PageLayout>

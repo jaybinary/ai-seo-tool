@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { SKILLS, COLORS } from '../utils/skills';
 import { saveAudit } from '../utils/auth';
 import { useAuth } from '../hooks/useAuth';
 
@@ -529,14 +530,14 @@ export default function Audit() {
     }
 
     // Save to history if logged in
-if (user) {
-  try {
-    await saveAudit(u, states);
-    setSavedNotice(true);   // stays visible permanently — no auto-dismiss
-  } catch (e) {
-    console.error('Save failed:', e);
-  }
-}
+    if (user) {
+      try {
+        await saveAudit(u, states);
+        setSavedNotice(true);
+      } catch (e) {
+        console.error('Save failed:', e);
+      }
+    }
 
     const encoded = btoa(JSON.stringify({ url: u, states }));
     window.history.replaceState(null, '', `/audit#report=${encoded}`);

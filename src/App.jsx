@@ -12,6 +12,9 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Audit from './pages/Audit';
+import Legal from './pages/Legal';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 
 // Audit page uses its own full-height layout (no footer scroll)
 function AuditLayout() {
@@ -69,6 +72,15 @@ export default function App() {
         <PageLayout><Dashboard /></PageLayout>
       } />
       <Route path="/audit" element={<AuditLayout />} />
+      <Route path="/legal" element={
+        <PageLayout><Legal /></PageLayout>
+      } />
+      <Route path="/privacy" element={
+        <PageLayout><PrivacyPolicy /></PageLayout>
+      } />
+      <Route path="/terms" element={
+        <PageLayout><TermsOfService /></PageLayout>
+      } />
       {/* Fallback */}
       <Route path="*" element={
         <PageLayout><Home /></PageLayout>

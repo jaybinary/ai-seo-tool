@@ -1,18 +1,16 @@
-/* ════════════════════════════════════════════════════════════════
-   PageIQ — Full SaaS Design System
-   ════════════════════════════════════════════════════════════════ */
-
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
+import About from './pages/About';
 import Pricing from './pages/Pricing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Audit from './pages/Audit';
 
+// Audit page uses its own full-height layout (no footer scroll)
 function AuditLayout() {
   return (
     <>
@@ -24,6 +22,7 @@ function AuditLayout() {
   );
 }
 
+// Standard page layout with navbar + footer
 function PageLayout({ children }) {
   return (
     <>
@@ -39,13 +38,29 @@ function PageLayout({ children }) {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<PageLayout><Home /></PageLayout>} />
-      <Route path="/pricing" element={<PageLayout><Pricing /></PageLayout>} />
-      <Route path="/login" element={<PageLayout><Login /></PageLayout>} />
-      <Route path="/signup" element={<PageLayout><Signup /></PageLayout>} />
-      <Route path="/dashboard" element={<PageLayout><Dashboard /></PageLayout>} />
+      <Route path="/" element={
+        <PageLayout><Home /></PageLayout>
+      } />
+      <Route path="/about" element={
+        <PageLayout><About /></PageLayout>
+      } />
+      <Route path="/pricing" element={
+        <PageLayout><Pricing /></PageLayout>
+      } />
+      <Route path="/login" element={
+        <PageLayout><Login /></PageLayout>
+      } />
+      <Route path="/signup" element={
+        <PageLayout><Signup /></PageLayout>
+      } />
+      <Route path="/dashboard" element={
+        <PageLayout><Dashboard /></PageLayout>
+      } />
       <Route path="/audit" element={<AuditLayout />} />
-      <Route path="*" element={<PageLayout><Home /></PageLayout>} />
+      {/* Fallback */}
+      <Route path="*" element={
+        <PageLayout><Home /></PageLayout>
+      } />
     </Routes>
   );
 }

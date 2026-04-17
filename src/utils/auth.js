@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js'
+import { supabase, normalizeUrl, extractDomain } from './supabase.js'
 
 // ─── AUTH ───────────────────────────────────────────────
 
@@ -32,7 +32,6 @@ export async function getUser() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  // Get full profile from public.users table
   const { data: profile } = await supabase
     .from('users')
     .select('*')
@@ -122,14 +121,12 @@ export async function saveAudit(url, skillStates) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { normalizeUrl, extractDomain } = await import('./supabase.js')
   const overallScore = computeOverallScore(skillStates)
   const insights = computeInsights(skillStates)
   const skillsRun = Object.entries(skillStates)
     .filter(([, s]) => s?.result)
     .map(([k]) => k)
 
-  // Insert master audit record
   const { data: audit, error: auditError } = await supabase
     .from('audits')
     .insert({
@@ -148,7 +145,6 @@ export async function saveAudit(url, skillStates) {
 
   if (auditError) { console.error('Error saving audit:', auditError); return null }
 
-  // Insert one row per skill result
   const resultRows = Object.entries(skillStates)
     .filter(([, s]) => s?.result || s?.error)
     .map(([key, state]) => ({

@@ -37,6 +37,7 @@ export default function Navbar() {
           <Link to="/about" className={`navbar-link ${isActive('/about') ? 'active' : ''}`}>About</Link>
           <Link to="/blog" className={`navbar-link ${location.pathname.startsWith('/blog') ? 'active' : ''}`}>Blog</Link>
           <Link to="/pricing" className={`navbar-link ${isActive('/pricing') ? 'active' : ''}`}>Pricing</Link>
+          <Link to="/contact" className={`navbar-link ${isActive('/contact') ? 'active' : ''}`}>Contact</Link>
           {user && (
             <Link to="/dashboard" className={`navbar-link ${isActive('/dashboard') ? 'active' : ''}`}>Dashboard</Link>
           )}
@@ -97,6 +98,7 @@ export default function Navbar() {
           <Link to="/about" style={mobileLink} onClick={() => setMenuOpen(false)}>About</Link>
           <Link to="/blog" style={mobileLink} onClick={() => setMenuOpen(false)}>Blog</Link>
           <Link to="/pricing" style={mobileLink} onClick={() => setMenuOpen(false)}>Pricing</Link>
+          <Link to="/contact" style={mobileLink} onClick={() => setMenuOpen(false)}>Contact</Link>
           {user ? (
             <>
               <Link to="/dashboard" style={mobileLink} onClick={() => setMenuOpen(false)}>Dashboard</Link>

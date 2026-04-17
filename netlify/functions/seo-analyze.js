@@ -1,77 +1,92 @@
 // Uses native fetch (Node 18+) — no SDK dependency needed
 
+// token limits per skill: [contentChars, maxTokens]
+const SKILL_LIMITS = {
+  eeat:         [3000, 1500],
+  rewrite:      [3000, 2000],
+  schema:       [2000, 1500],
+  querymap:     [2000, 1200],
+  entities:     [2500, 1200],
+  brief:        [2500, 1500],
+  meta:         [1000,  800],
+  linking:      [1500, 1000],
+  topical:      [2000, 1200],
+  citation:     [2000, 1200],
+  urlstructure: [ 500,  800],
+};
+
 const SKILL_PROMPTS = {
   eeat: {
     name: "E-E-A-T Audit",
     prompt: (content, url) => `You are an expert SEO auditor specializing in Google's E-E-A-T guidelines. Analyze this webpage content from ${url} and provide a detailed E-E-A-T audit. Return ONLY valid JSON (no markdown, no code blocks) in this exact format:
 {"score":<0-100>,"summary":"<2-3 sentence summary>","experience":{"score":<0-100>,"findings":["<f1>","<f2>"],"recommendations":["<r1>","<r2>"]},"expertise":{"score":<0-100>,"findings":["<f1>","<f2>"],"recommendations":["<r1>","<r2>"]},"authoritativeness":{"score":<0-100>,"findings":["<f1>","<f2>"],"recommendations":["<r1>","<r2>"]},"trustworthiness":{"score":<0-100>,"findings":["<f1>","<f2>"],"recommendations":["<r1>","<r2>"]},"priority_fixes":["<fix1>","<fix2>","<fix3>"]}
-CONTENT: ${content.slice(0, 3000)}`
+CONTENT: ${content}`
   },
   rewrite: {
     name: "AI Content Rewrite",
     prompt: (content, url) => `You are an expert content strategist optimizing content for AI search engines (SGE, Perplexity, ChatGPT). Rewrite this content from ${url} for AI search visibility. Return ONLY valid JSON (no markdown) in this exact format:
 {"summary":"<what changed>","rewritten_content":"<rewritten text>","key_changes":["<c1>","<c2>","<c3>"],"ai_readability_score":<0-100>,"improvements":["<i1>","<i2>"]}
-CONTENT: ${content.slice(0, 3000)}`
+CONTENT: ${content}`
   },
   schema: {
     name: "Schema Markup",
     prompt: (content, url) => `You are a structured data expert. Generate JSON-LD schema markup for this content from ${url}. Return ONLY valid JSON (no markdown) in this exact format:
 {"summary":"<which schemas generated>","schemas":[{"type":"<schema type>","json_ld":{"@context":"https://schema.org","@type":"<type>"},"placement":"<head or body>"}],"implementation_notes":["<n1>","<n2>"],"missing_data":["<d1>"]}
-CONTENT: ${content.slice(0, 3000)}`
+CONTENT: ${content}`
   },
   querymap: {
     name: "Conversational Query Map",
     prompt: (content, url) => `You are a conversational search expert. Create a query map for this content from ${url}. Return ONLY valid JSON (no markdown) in this exact format:
 {"summary":"<overview>","primary_queries":[{"query":"<q>","intent":"<informational|navigational|transactional>","priority":"<high|medium|low>"}],"voice_search_queries":["<q1>","<q2>","<q3>"],"featured_snippet_opportunities":[{"query":"<q>","recommended_format":"<paragraph|list|table>","current_coverage":"<covered|partial|missing>"}],"missing_queries":["<q1>","<q2>"],"total_opportunity_score":<0-100>}
-CONTENT: ${content.slice(0, 3000)}`
+CONTENT: ${content}`
   },
   entities: {
     name: "Entity Coverage",
     prompt: (content, url) => `You are a semantic SEO expert. Analyze entity coverage for this content from ${url}. Return ONLY valid JSON (no markdown) in this exact format:
 {"summary":"<assessment>","covered_entities":[{"entity":"<name>","type":"<Person|Organization|Concept|Product|Location>","mentions":<count>,"prominence":"<primary|secondary|mention>"}],"missing_entities":[{"entity":"<name>","type":"<type>","reason":"<why include>"}],"entity_relationships":["<entity A> relates to <entity B>"],"topic_coverage_score":<0-100>,"recommendations":["<r1>","<r2>","<r3>"]}
-CONTENT: ${content.slice(0, 3000)}`
+CONTENT: ${content}`
   },
   brief: {
     name: "Content Brief",
     prompt: (content, url) => `You are a senior content strategist. Create a content brief for improving this page from ${url}. Return ONLY valid JSON (no markdown) in this exact format:
 {"summary":"<brief overview>","target_audience":"<who>","primary_keyword":"<keyword>","secondary_keywords":["<kw1>","<kw2>","<kw3>"],"recommended_word_count":<number>,"content_structure":[{"section":"<H1|H2|H3>","heading":"<heading>","notes":"<what to cover>"}],"must_include":["<point1>","<point2>"],"avoid":["<topic1>"],"tone":"<professional|conversational|technical>","cta_recommendations":["<cta1>","<cta2>"],"competitive_gaps":["<gap1>","<gap2>"]}
-CONTENT: ${content.slice(0, 3000)}`
+CONTENT: ${content}`
   },
   meta: {
     name: "Title & Description",
     prompt: (content, url) => `You are a conversion-focused SEO copywriter. Generate optimized meta tags for this content from ${url}. Return ONLY valid JSON (no markdown) in this exact format:
 {"summary":"<assessment>","current_issues":["<issue1>","<issue2>"],"title_tags":[{"title":"<title>","length":<chars>,"type":"<CTR-focused|Keyword-focused|Question-based>","score":<0-100>}],"meta_descriptions":[{"description":"<desc>","length":<chars>,"type":"<Action-focused|Question-based|Benefit-focused>","score":<0-100>}],"recommended_combination":{"title":"<best title>","description":"<best desc>","reasoning":"<why>"},"open_graph":{"og_title":"<og title>","og_description":"<og desc>"}}
-CONTENT: ${content.slice(0, 3000)}`
+CONTENT: ${content}`
   },
   linking: {
     name: "Internal Linking Map",
     prompt: (content, url) => `You are an internal linking strategist. Create an internal linking strategy for this content from ${url}. Return ONLY valid JSON (no markdown) in this exact format:
 {"summary":"<assessment>","page_type":"<pillar|cluster|landing|blog|product>","link_opportunities":[{"anchor_text":"<anchor>","target_topic":"<topic>","placement":"<where>","priority":"<high|medium|low>"}],"pages_that_should_link_here":[{"topic":"<topic>","reason":"<why>"}],"orphan_risk":"<low|medium|high>","silo_recommendations":["<rec1>","<rec2>"],"anchor_text_diversity":"<assessment>"}
-CONTENT: ${content.slice(0, 3000)}`
+CONTENT: ${content}`
   },
   topical: {
     name: "Topical Authority Cluster",
     prompt: (content, url) => `You are a topical authority strategist. Design a content cluster for this page from ${url}. Return ONLY valid JSON (no markdown) in this exact format:
 {"summary":"<assessment>","main_topic":"<core topic>","pillar_page_recommendation":{"topic":"<pillar topic>","is_current_page_the_pillar":true,"notes":"<notes>"},"cluster_pages":[{"topic":"<subtopic>","suggested_title":"<title>","word_count":<number>,"relationship":"<supports|extends|complements>"}],"content_gaps":["<gap1>","<gap2>"],"topical_authority_score":<0-100>,"quick_wins":["<win1>","<win2>"],"long_term_strategy":"<3-6 month roadmap>"}
-CONTENT: ${content.slice(0, 3000)}`
+CONTENT: ${content}`
   },
   citation: {
     name: "AI Citation Optimizer",
     prompt: (content, url) => `You are an AI citation optimization specialist. Optimize this content from ${url} to be cited by ChatGPT, Perplexity AI, and Google SGE. Return ONLY valid JSON (no markdown) in this exact format:
 {"summary":"<assessment>","citation_score":<0-100>,"citation_triggers":["<trigger1>","<trigger2>"],"optimized_passages":[{"original":"<original>","optimized":"<rewritten>","reason":"<why>"}],"missing_citation_signals":["<signal1>","<signal2>"],"best_citation_format":"<paragraph|list|definition|statistic>","ai_engine_specific":{"perplexity":"<tip>","chatgpt":"<tip>","google_sge":"<tip>"},"action_items":["<action1>","<action2>","<action3>"]}
-CONTENT: ${content.slice(0, 3000)}`
+CONTENT: ${content}`
   },
   urlstructure: {
     name: "URL & Structure Audit",
     prompt: (content, url) => `You are a technical SEO specialist. Analyze the URL structure and page architecture for ${url}. Return ONLY valid JSON (no markdown) in this exact format:
 {"summary":"<overall assessment>","url_score":<0-100>,"current_url":"${url}","url_issues":["<issue1>","<issue2>"],"slug_analysis":{"current_slug":"<slug from url>","length":<char count of slug>,"has_keywords":true,"has_stop_words":true,"is_lowercase":true,"uses_hyphens":true,"verdict":"<good|needs-work|poor>"},"recommended_slug":"<better-slug-suggestion>","url_depth":{"current_depth":<number of path segments>,"recommendation":"<keep or simplify>","verdict":"<good|too-deep|shallow>"},"breadcrumb_structure":{"recommended":["Home","<Category>","<Page Title>"],"currently_present":true,"schema_needed":true},"technical_issues":["<issue1>","<issue2>"],"canonical_recommendation":"<self-referencing or alternate canonical url>","quick_fixes":["<fix1>","<fix2>","<fix3>"],"priority_actions":["<action1>","<action2>"]}
-CONTENT: ${content.slice(0, 3000)}`
+URL ONLY: ${url}`
   }
 };
 
 // ─── Call Claude API directly via fetch (with retry on 529) ─────────────────
 
-async function callClaude(prompt, retries = 3) {
+async function callClaude(prompt, maxTokens = 1200, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -82,7 +97,7 @@ async function callClaude(prompt, retries = 3) {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 2000,
+        max_tokens: maxTokens,
         messages: [{ role: "user", content: prompt }]
       }),
       signal: AbortSignal.timeout(25000)
@@ -134,7 +149,9 @@ async function fetchPageContent(url) {
 async function runSkill(skillKey, content, url) {
   const skill = SKILL_PROMPTS[skillKey];
   if (!skill) throw new Error(`Unknown skill: ${skillKey}`);
-  const text = await callClaude(skill.prompt(content, url));
+  const [contentChars, maxTokens] = SKILL_LIMITS[skillKey] || [2000, 1200];
+  const trimmedContent = content.slice(0, contentChars);
+  const text = await callClaude(skill.prompt(trimmedContent, url), maxTokens);
   try {
     return JSON.parse(text);
   } catch {

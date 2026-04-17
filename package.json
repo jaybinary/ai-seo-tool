@@ -1,15 +1,15 @@
 {
-  "name": "ai-seo-tool",
-  "version": "1.0.0",
+  "name": "pageiq",
+  "version": "2.0.0",
   "scripts": {
     "dev": "netlify dev",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",

@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { SKILLS, COLORS } from '../utils/skills';
 import { saveAudit } from '../utils/auth';
 import { useAuth } from '../hooks/useAuth';
+import BlogBriefButton from '../components/BlogBrief/BlogBriefButton';
 
 // ── Score Pill ────────────────────────────────────────────────────────────────
 function ScorePill({ score }) {
@@ -633,6 +634,7 @@ export default function Audit() {
             ? <span className="copied-badge">✓ Link copied!</span>
             : <button className="btn-export" onClick={copyShareLink}>🔗 Copy Share Link</button>
           }
+          <BlogBriefButton url={url} auditSnapshot={states} />
           <button className="btn-export primary" onClick={exportPDF}>🖨️ Export PDF</button>
           <button className="btn-export" onClick={exportHTML}>🌐 Download HTML</button>
         </div>

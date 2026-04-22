@@ -20,3 +20,6 @@
 
 [functions]
   node_bundler = "esbuild"
+
+[functions."generate-brief"]
+  timeout = 26

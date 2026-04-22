@@ -41,7 +41,7 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         model:      'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        max_tokens: 1500,
         system:     SYSTEM_PROMPT,
         messages:   [{ role: 'user', content: ctx }],
       }),
@@ -57,13 +57,24 @@ exports.handler = async (event) => {
     const raw = claudeData.content?.[0]?.text || '';
 
     // Strip any accidental markdown fences
-    const cleaned = raw.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+    const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
 
     let brief;
-    try { brief = JSON.parse(cleaned); }
-    catch {
-      console.error('JSON parse failed. Raw:', raw);
-      return { statusCode: 502, headers, body: JSON.stringify({ error: 'Failed to parse AI response. Try again.' }) };
+    try {
+      brief = JSON.parse(cleaned);
+    } catch {
+      // Fallback: extract the first { ... } block from the response
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (match) {
+        try { brief = JSON.parse(match[0]); }
+        catch {
+          console.error('JSON parse failed even after extraction. Raw:', raw.slice(0, 500));
+          return { statusCode: 502, headers, body: JSON.stringify({ error: 'Failed to parse AI response. Try again.' }) };
+        }
+      } else {
+        console.error('No JSON object found in response. Raw:', raw.slice(0, 500));
+        return { statusCode: 502, headers, body: JSON.stringify({ error: 'Failed to parse AI response. Try again.' }) };
+      }
     }
 
     // ── Stub Ahrefs placeholders (enrich later) ──────────────────────────
@@ -203,7 +214,6 @@ OUTPUT JSON SCHEMA (return exactly this structure, fully populated):
       {
         "h2": "Section heading",
         "purpose": "what this section achieves for the reader",
-        "wordCount": 200,
         "h3s": ["Sub-heading 1", "Sub-heading 2"],
         "writingNotes": "tone, angle, or data to include"
       }

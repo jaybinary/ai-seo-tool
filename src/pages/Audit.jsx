@@ -5,6 +5,24 @@ import { saveAudit } from '../utils/auth';
 import { useAuth } from '../hooks/useAuth';
 import BlogBriefButton from '../components/BlogBrief/BlogBriefButton';
 
+// ── Error Boundary (catches render crashes in skill cards) ────────────────────
+class SkillErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false, message: '' }; }
+  static getDerivedStateFromError(err) { return { hasError: true, message: err?.message || 'Render error' }; }
+  componentDidCatch(err, info) { console.error('SkillResults crash:', err, info); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="result-block" style={{ color: '#f87171' }}>
+          ⚠️ Could not render result — {this.state.message}
+          <br /><small>Raw data is available in the browser console.</small>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ── Score Pill ────────────────────────────────────────────────────────────────
 function ScorePill({ score }) {
   if (score == null) return null;
@@ -465,7 +483,7 @@ export default function Audit() {
     const hash = window.location.hash;
     if (hash.startsWith('#report=')) {
       try {
-        const decoded = JSON.parse(atob(hash.replace('#report=', '')));
+        const decoded = JSON.parse(decodeURIComponent(escape(atob(hash.replace('#report=', '')))));
         setAnalysisUrl(decoded.url);
         setUrl(decoded.url);
         setSkillStates(decoded.states);
@@ -549,7 +567,8 @@ export default function Audit() {
       }
     }
 
-    const encoded = btoa(JSON.stringify({ url: u, states }));
+    // Unicode-safe encoding (btoa breaks on non-Latin1 chars like Hindi/emojis)
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify({ url: u, states }))));
     window.history.replaceState(null, '', `/audit#report=${encoded}`);
     setIsRunningAll(false);
   };
@@ -737,7 +756,9 @@ export default function Audit() {
 
                 {activeState.status === 'success' && activeState.data && (
                   <>
-                    <SkillResults skillKey={activeSkill.key} data={activeState.data} />
+                    <SkillErrorBoundary key={activeSkill.key}>
+                      <SkillResults skillKey={activeSkill.key} data={activeState.data} />
+                    </SkillErrorBoundary>
                     <div style={{marginTop:20,display:'flex',gap:10,flexWrap:'wrap'}}>
                       <button className="btn-copy" onClick={() => navigator.clipboard.writeText(JSON.stringify(activeState.data, null, 2))}>
                         Copy JSON

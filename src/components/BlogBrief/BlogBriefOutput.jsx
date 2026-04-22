@@ -1,6 +1,6 @@
 // ── BlogBriefOutput ───────────────────────────────────────────────────────────
 // Renders the structured blog brief as named sections.
-// Each section has a copy button. Export bar at top.
+// Matches the lean JSON schema from generate-brief.js
 
 import React, { useState } from 'react';
 
@@ -21,14 +21,13 @@ function CopyBtn({ text, label = 'Copy' }) {
 }
 
 // ── Section wrapper ───────────────────────────────────────────────────────────
-function BriefSection({ icon, title, badge, copyText, children }) {
+function BriefSection({ icon, title, copyText, children }) {
   return (
     <div className="bb-section">
       <div className="bb-section-header">
         <div className="bb-section-title">
           <span className="bb-section-icon">{icon}</span>
           {title}
-          {badge && <span className={`bb-section-badge ${badge.type}`}>{badge.label}</span>}
         </div>
         {copyText && <CopyBtn text={copyText} />}
       </div>
@@ -40,17 +39,6 @@ function BriefSection({ icon, title, badge, copyText, children }) {
 // ── Pill badge ────────────────────────────────────────────────────────────────
 function Pill({ label, type = 'default' }) {
   return <span className={`bb-pill bb-pill--${type}`}>{label}</span>;
-}
-
-// ── Priority label ────────────────────────────────────────────────────────────
-function Priority({ value }) {
-  const map = {
-    'must-include':    { label: 'Must',   type: 'red' },
-    'should-include':  { label: 'Should', type: 'yellow' },
-    'nice-to-have':    { label: 'Nice',   type: 'green' },
-  };
-  const p = map[value] || { label: value, type: 'default' };
-  return <span className={`bb-priority bb-priority--${p.type}`}>{p.label}</span>;
 }
 
 // ── Main output component ─────────────────────────────────────────────────────
@@ -68,15 +56,13 @@ export default function BlogBriefOutput({ brief, url, keyword }) {
       'OVERVIEW',
       '═══════════════════════════════',
       `Search Intent: ${brief.searchIntent}`,
-      `Intent Explanation: ${brief.intentExplanation}`,
-      `Recommended Length: ${brief.recommendedLength?.ideal || '—'} words (${brief.recommendedLength?.min}–${brief.recommendedLength?.max})`,
-      `Rationale: ${brief.recommendedLength?.rationale || ''}`,
-      `Secondary Keywords: ${brief.secondaryKeywords?.join(', ')}`,
+      `Recommended Word Count: ${brief.recommendedWordCount} words`,
+      `Secondary Keywords: ${(brief.secondaryKeywords || []).join(', ')}`,
       '',
       '═══════════════════════════════',
       'TITLE OPTIONS',
       '═══════════════════════════════',
-      ...(brief.titleOptions || []).map((t, i) => `${i + 1}. ${t.title}\n   Angle: ${t.angle} | Emotion: ${t.emotion}`),
+      ...(brief.titles || []).map((t, i) => `${i + 1}. ${t}`),
       '',
       '═══════════════════════════════',
       'H1 / OUTLINE',
@@ -84,11 +70,9 @@ export default function BlogBriefOutput({ brief, url, keyword }) {
       `H1: ${brief.outline?.h1}`,
       `Intro: ${brief.outline?.intro}`,
       '',
-      ...(brief.outline?.sections || []).flatMap(s => [
-        `H2: ${s.h2}  (~${s.wordCount} words)`,
-        `  Purpose: ${s.purpose}`,
-        ...(s.h3s || []).map(h => `  H3: ${h}`),
-        `  Notes: ${s.writingNotes || ''}`,
+      ...(brief.outline?.h2s || []).flatMap(s => [
+        `H2: ${s.heading}`,
+        `  Note: ${s.note}`,
         '',
       ]),
       `Conclusion: ${brief.outline?.conclusion}`,
@@ -96,38 +80,27 @@ export default function BlogBriefOutput({ brief, url, keyword }) {
       '═══════════════════════════════',
       'FAQ SECTION',
       '═══════════════════════════════',
-      ...(brief.faqSection || []).map(f => `Q: ${f.question}\nA hint: ${f.answerHint}\n`),
+      ...(brief.faqs || []).map(f => `Q: ${f.q}\nHint: ${f.hint}\n`),
       '═══════════════════════════════',
-      'ENTITY COVERAGE',
+      'MUST-INCLUDE ENTITIES',
       '═══════════════════════════════',
-      ...(brief.entityCoverage || []).map(e => `[${e.priority}] ${e.entity} (${e.type}) — ${e.context}`),
+      (brief.mustIncludeEntities || []).join(', '),
       '',
       '═══════════════════════════════',
       'INTERNAL LINKS',
       '═══════════════════════════════',
-      ...(brief.internalLinks || []).map(l => `"${l.anchorText}" → ${l.targetPageType} (${l.placement})\n  Why: ${l.reason}`),
+      ...(brief.internalLinks || []).map(l => `"${l.anchor}" → ${l.page}`),
       '',
       '═══════════════════════════════',
-      'CTA IDEAS',
+      'CTA',
       '═══════════════════════════════',
-      ...(brief.ctaIdeas || []).map(c => `[${c.placement}] "${c.cta}" — ${c.goal} | style: ${c.style}`),
+      brief.cta || '',
       '',
       '═══════════════════════════════',
-      'TONE & VOICE',
+      'TONE & DIFFERENTIATOR',
       '═══════════════════════════════',
-      `Recommended: ${brief.toneAndVoice?.recommended}`,
-      `Avoid: ${brief.toneAndVoice?.avoid}`,
-      `Examples: ${(brief.toneAndVoice?.examples || []).join(' / ')}`,
-      '',
-      '═══════════════════════════════',
-      'COMPETITOR ANGLE',
-      '═══════════════════════════════',
-      brief.competitorAngle || '',
-      '',
-      '── Ahrefs enrichment (pending) ──',
-      `Keyword Volume: ${brief.ahrefs?.keywordVolume ?? 'Not yet enriched'}`,
-      `Keyword Difficulty: ${brief.ahrefs?.keywordDifficulty ?? 'Not yet enriched'}`,
-      `Competitor URLs: ${brief.ahrefs?.competitorUrls?.length ? brief.ahrefs.competitorUrls.join(', ') : 'Not yet enriched'}`,
+      `Tone: ${brief.tone}`,
+      `Differentiator: ${brief.differentiator}`,
     ];
     return lines.join('\n');
   }
@@ -147,7 +120,7 @@ export default function BlogBriefOutput({ brief, url, keyword }) {
         <div className="bb-export-label">
           <span className="bb-export-kw">✍️ {brief.targetKeyword}</span>
           <Pill label={brief.searchIntent} type={intentColors[brief.searchIntent] || 'blue'} />
-          <span className="bb-export-length">~{brief.recommendedLength?.ideal} words</span>
+          <span className="bb-export-length">~{brief.recommendedWordCount} words</span>
         </div>
         <div className="bb-export-actions">
           <CopyBtn text={buildExportText()} label="Copy All" />
@@ -157,7 +130,7 @@ export default function BlogBriefOutput({ brief, url, keyword }) {
               const blob = new Blob([buildExportText()], { type: 'text/plain' });
               const a = document.createElement('a');
               a.href = URL.createObjectURL(blob);
-              a.download = `pageiq-brief-${brief.targetKeyword.replace(/\s+/g, '-')}.txt`;
+              a.download = `pageiq-brief-${(brief.targetKeyword || 'brief').replace(/\s+/g, '-')}.txt`;
               a.click();
             }}
           >
@@ -174,19 +147,19 @@ export default function BlogBriefOutput({ brief, url, keyword }) {
         </div>
         <div className="bb-overview-item">
           <div className="bb-overview-label">Length</div>
-          <div className="bb-overview-value">{brief.recommendedLength?.min}–{brief.recommendedLength?.max} words</div>
+          <div className="bb-overview-value">{brief.recommendedWordCount ? `~${brief.recommendedWordCount}` : '—'} words</div>
         </div>
         <div className="bb-overview-item">
           <div className="bb-overview-label">Sections</div>
-          <div className="bb-overview-value">{brief.outline?.sections?.length || 0} H2s</div>
+          <div className="bb-overview-value">{brief.outline?.h2s?.length || 0} H2s</div>
         </div>
         <div className="bb-overview-item">
           <div className="bb-overview-label">FAQs</div>
-          <div className="bb-overview-value">{brief.faqSection?.length || 0} questions</div>
+          <div className="bb-overview-value">{brief.faqs?.length || 0} questions</div>
         </div>
         <div className="bb-overview-item">
           <div className="bb-overview-label">Entities</div>
-          <div className="bb-overview-value">{brief.entityCoverage?.length || 0} to cover</div>
+          <div className="bb-overview-value">{brief.mustIncludeEntities?.length || 0} to cover</div>
         </div>
         <div className="bb-overview-item bb-overview-item--future">
           <div className="bb-overview-label">KW Volume</div>
@@ -197,8 +170,6 @@ export default function BlogBriefOutput({ brief, url, keyword }) {
           <div className="bb-overview-value bb-future-pill">Ahrefs ⌛</div>
         </div>
       </div>
-
-      <p className="bb-intent-explanation">{brief.intentExplanation}</p>
 
       {/* ── Keyword ── */}
       <BriefSection icon="🎯" title="Target Keyword"
@@ -214,19 +185,15 @@ export default function BlogBriefOutput({ brief, url, keyword }) {
 
       {/* ── Title Options ── */}
       <BriefSection icon="📰" title="Title Options"
-        copyText={(brief.titleOptions || []).map((t, i) => `${i+1}. ${t.title}`).join('\n')}>
+        copyText={(brief.titles || []).map((t, i) => `${i+1}. ${t}`).join('\n')}>
         <div className="bb-titles-list">
-          {(brief.titleOptions || []).map((t, i) => (
+          {(brief.titles || []).map((t, i) => (
             <div key={i} className="bb-title-item">
               <div className="bb-title-num">{i + 1}</div>
               <div className="bb-title-body">
-                <div className="bb-title-text">{t.title}</div>
-                <div className="bb-title-meta">
-                  <span className="bb-title-angle">{t.angle}</span>
-                  <span className={`bb-emotion bb-emotion--${t.emotion}`}>{t.emotion}</span>
-                </div>
+                <div className="bb-title-text">{t}</div>
               </div>
-              <CopyBtn text={t.title} label="" />
+              <CopyBtn text={t} label="" />
             </div>
           ))}
         </div>
@@ -237,10 +204,7 @@ export default function BlogBriefOutput({ brief, url, keyword }) {
         copyText={[
           `H1: ${brief.outline?.h1}`,
           `Intro: ${brief.outline?.intro}`,
-          ...(brief.outline?.sections || []).flatMap(s => [
-            `\nH2: ${s.h2}`,
-            ...(s.h3s || []).map(h => `  H3: ${h}`),
-          ]),
+          ...(brief.outline?.h2s || []).map(s => `\nH2: ${s.heading}\n  Note: ${s.note}`),
           `\nConclusion: ${brief.outline?.conclusion}`,
         ].join('\n')}>
         <div className="bb-outline">
@@ -250,23 +214,13 @@ export default function BlogBriefOutput({ brief, url, keyword }) {
           </div>
           <div className="bb-outline-intro">{brief.outline?.intro}</div>
 
-          {(brief.outline?.sections || []).map((s, i) => (
+          {(brief.outline?.h2s || []).map((s, i) => (
             <div key={i} className="bb-outline-section">
               <div className="bb-outline-h2">
                 <span className="bb-hx-tag">H2</span>
-                <span className="bb-hx-text">{s.h2}</span>
-                <span className="bb-section-wc">~{s.wordCount}w</span>
+                <span className="bb-hx-text">{s.heading}</span>
               </div>
-              <div className="bb-outline-purpose">{s.purpose}</div>
-              {(s.h3s || []).map((h3, j) => (
-                <div key={j} className="bb-outline-h3">
-                  <span className="bb-hx-tag bb-hx-tag--h3">H3</span>
-                  <span className="bb-hx-text">{h3}</span>
-                </div>
-              ))}
-              {s.writingNotes && (
-                <div className="bb-writing-note">✏️ {s.writingNotes}</div>
-              )}
+              {s.note && <div className="bb-writing-note">✏️ {s.note}</div>}
             </div>
           ))}
 
@@ -279,13 +233,12 @@ export default function BlogBriefOutput({ brief, url, keyword }) {
 
       {/* ── FAQ ── */}
       <BriefSection icon="❓" title="FAQ Section"
-        copyText={(brief.faqSection || []).map(f => `Q: ${f.question}\nA: ${f.answerHint}`).join('\n\n')}>
+        copyText={(brief.faqs || []).map(f => `Q: ${f.q}\nA: ${f.hint}`).join('\n\n')}>
         <div className="bb-faq-list">
-          {(brief.faqSection || []).map((f, i) => (
+          {(brief.faqs || []).map((f, i) => (
             <div key={i} className="bb-faq-item">
-              <div className="bb-faq-q">{f.question}</div>
-              <div className="bb-faq-hint">{f.answerHint}</div>
-              <span className="bb-faq-source">source: {f.source}</span>
+              <div className="bb-faq-q">{f.q}</div>
+              <div className="bb-faq-hint">{f.hint}</div>
             </div>
           ))}
         </div>
@@ -293,52 +246,33 @@ export default function BlogBriefOutput({ brief, url, keyword }) {
 
       {/* ── Entity Coverage ── */}
       <BriefSection icon="🏷️" title="Entity Coverage"
-        copyText={(brief.entityCoverage || []).map(e => `[${e.priority}] ${e.entity} (${e.type}): ${e.context}`).join('\n')}>
-        <div className="bb-entity-list">
-          {(brief.entityCoverage || []).map((e, i) => (
-            <div key={i} className="bb-entity-item">
-              <Priority value={e.priority} />
-              <div className="bb-entity-body">
-                <span className="bb-entity-name">{e.entity}</span>
-                <span className="bb-entity-type">{e.type}</span>
-              </div>
-              <div className="bb-entity-context">{e.context}</div>
-            </div>
+        copyText={(brief.mustIncludeEntities || []).join(', ')}>
+        <div className="bb-chips-row" style={{ flexWrap: 'wrap', gap: '8px' }}>
+          {(brief.mustIncludeEntities || []).map((e, i) => (
+            <span key={i} className="bb-chip">✓ {e}</span>
           ))}
         </div>
       </BriefSection>
 
       {/* ── Internal Links ── */}
       <BriefSection icon="🔗" title="Internal Link Suggestions"
-        copyText={(brief.internalLinks || []).map(l => `"${l.anchorText}" → ${l.targetPageType} (${l.placement}): ${l.reason}`).join('\n')}>
+        copyText={(brief.internalLinks || []).map(l => `"${l.anchor}" → ${l.page}`).join('\n')}>
         <div className="bb-links-list">
           {(brief.internalLinks || []).map((l, i) => (
             <div key={i} className="bb-link-item">
-              <div className="bb-link-anchor">"{l.anchorText}"</div>
+              <div className="bb-link-anchor">"{l.anchor}"</div>
               <div className="bb-link-meta">
-                <span className="bb-link-target">→ {l.targetPageType}</span>
-                <span className="bb-link-placement">{l.placement}</span>
+                <span className="bb-link-target">→ {l.page}</span>
               </div>
-              <div className="bb-link-reason">{l.reason}</div>
             </div>
           ))}
         </div>
       </BriefSection>
 
-      {/* ── CTAs ── */}
-      <BriefSection icon="⚡" title="CTA Ideas"
-        copyText={(brief.ctaIdeas || []).map(c => `[${c.placement}] "${c.cta}" — ${c.goal}`).join('\n')}>
-        <div className="bb-cta-list">
-          {(brief.ctaIdeas || []).map((c, i) => (
-            <div key={i} className="bb-cta-item">
-              <div className="bb-cta-text">"{c.cta}"</div>
-              <div className="bb-cta-meta">
-                <span className="bb-cta-placement">{c.placement}</span>
-                <span className="bb-cta-style">{c.style}</span>
-                <span className="bb-cta-goal">{c.goal}</span>
-              </div>
-            </div>
-          ))}
+      {/* ── CTA ── */}
+      <BriefSection icon="⚡" title="CTA Suggestion" copyText={brief.cta}>
+        <div className="bb-competitor-text" style={{ fontSize: '1rem', fontWeight: 500 }}>
+          "{brief.cta}"
         </div>
       </BriefSection>
 
@@ -347,27 +281,15 @@ export default function BlogBriefOutput({ brief, url, keyword }) {
         <div className="bb-tone-grid">
           <div className="bb-tone-item">
             <div className="bb-tone-label">Recommended tone</div>
-            <div className="bb-tone-value">{brief.toneAndVoice?.recommended}</div>
-          </div>
-          <div className="bb-tone-item">
-            <div className="bb-tone-label">Avoid</div>
-            <div className="bb-tone-value">{brief.toneAndVoice?.avoid}</div>
+            <div className="bb-tone-value">{brief.tone}</div>
           </div>
         </div>
-        {(brief.toneAndVoice?.examples || []).length > 0 && (
-          <div className="bb-tone-examples">
-            <div className="bb-tone-label">Example phrasing</div>
-            {brief.toneAndVoice.examples.map((ex, i) => (
-              <div key={i} className="bb-tone-example">"{ex}"</div>
-            ))}
-          </div>
-        )}
       </BriefSection>
 
       {/* ── Competitor Angle ── */}
       <BriefSection icon="🏆" title="Competitor Differentiation"
-        copyText={brief.competitorAngle}>
-        <p className="bb-competitor-text">{brief.competitorAngle}</p>
+        copyText={brief.differentiator}>
+        <p className="bb-competitor-text">{brief.differentiator}</p>
       </BriefSection>
 
       {/* ── Ahrefs placeholder ── */}

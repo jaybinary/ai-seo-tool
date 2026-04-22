@@ -4,6 +4,8 @@
 // Calls Claude claude-sonnet-4-6 and returns a structured blog brief as JSON
 // Future-ready: Ahrefs fields are stubbed as null, ready to be enriched
 
+exports.handler.timeout = 26;
+
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -40,8 +42,8 @@ exports.handler = async (event) => {
         'anthropic-version':    '2023-06-01',
       },
       body: JSON.stringify({
-        model:      'claude-haiku-4-5-20251001',
-        max_tokens: 1500,
+        model:      'claude-sonnet-4-6',
+        max_tokens: 2000,
         system:     SYSTEM_PROMPT,
         messages:   [{ role: 'user', content: ctx }],
       }),

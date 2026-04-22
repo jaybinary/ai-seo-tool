@@ -478,8 +478,16 @@ export default function Audit() {
   const setSkill = (key, update) =>
     setSkillStates(prev => ({ ...prev, [key]: { ...prev[key], ...update } }));
 
+  // Normalise URL — add https:// if user forgot the protocol
+  const normalizeUrl = (raw) => {
+    const trimmed = raw.trim();
+    if (!trimmed) return '';
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  };
+
   const runSkill = async (skillKey, targetUrl) => {
-    const u = (targetUrl || analysisUrl || '').trim();
+    const u = normalizeUrl(targetUrl || analysisUrl || '');
     if (!u) return;
     setSkill(skillKey, { status: 'running', data: null, error: null });
     try {
@@ -499,9 +507,10 @@ export default function Audit() {
   };
 
   const runAll = async (inputUrl) => {
-    const u = (inputUrl || url).trim();
+    const u = normalizeUrl(inputUrl || url);
     if (!u) return;
     setAnalysisUrl(u);
+    setUrl(u); // keep input in sync with normalised URL
     setIsRunningAll(true);
     setProgress({ done: 0, total: SKILLS.length });
     setActiveTab('eeat');
@@ -598,8 +607,8 @@ export default function Audit() {
           <div className="url-row">
             <input
               className="url-input"
-              type="url"
-              placeholder="https://yourwebsite.com/page-to-audit"
+              type="text"
+              placeholder="yourwebsite.com or https://yourwebsite.com/page"
               value={url}
               onChange={e => setUrl(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !isRunningAll && url.trim() && runAll(url)}

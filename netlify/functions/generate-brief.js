@@ -4,8 +4,6 @@
 // Calls Claude claude-sonnet-4-6 and returns a structured blog brief as JSON
 // Future-ready: Ahrefs fields are stubbed as null, ready to be enriched
 
-exports.handler.timeout = 26;
-
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',

@@ -23,3 +23,6 @@
 
 [functions."generate-brief"]
   timeout = 26
+
+[functions."write-article"]
+  timeout = 26

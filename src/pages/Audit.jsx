@@ -662,7 +662,7 @@ export default function Audit() {
             ? <span className="copied-badge">✓ Link copied!</span>
             : <button className="btn-export" onClick={copyShareLink}>🔗 Copy Share Link</button>
           }
-          <BlogBriefButton url={url} auditSnapshot={states} />
+          <BlogBriefButton url={url} auditSnapshot={skillStates} />
           <button className="btn-export primary" onClick={exportPDF}>🖨️ Export PDF</button>
           <button className="btn-export" onClick={exportHTML}>🌐 Download HTML</button>
         </div>

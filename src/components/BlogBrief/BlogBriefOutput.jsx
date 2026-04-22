@@ -3,6 +3,7 @@
 // Matches the lean JSON schema from generate-brief.js
 
 import React, { useState } from 'react';
+import WriteArticleButton from './WriteArticleButton';
 
 // ── Tiny copy button ──────────────────────────────────────────────────────────
 function CopyBtn({ text, label = 'Copy' }) {
@@ -123,6 +124,7 @@ export default function BlogBriefOutput({ brief, url, keyword }) {
           <span className="bb-export-length">~{brief.recommendedWordCount} words</span>
         </div>
         <div className="bb-export-actions">
+          <WriteArticleButton brief={brief} url={url} />
           <CopyBtn text={buildExportText()} label="Copy All" />
           <button
             className="bb-btn-download"

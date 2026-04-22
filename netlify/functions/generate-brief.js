@@ -82,8 +82,9 @@ exports.handler = async (event) => {
 };
 
 // ── Context builder ───────────────────────────────────────────────────────────
+// skillStates shape: { querymap: { status, data: {...}, error }, eeat: { status, data, error }, ... }
+// So we always access snap[skill].data to get the actual result
 function buildContext(url, keyword, audience, snap) {
-  const s = snap;
   const lines = [`URL: ${url}`];
 
   if (keyword)  lines.push(`Target Keyword (user-provided): ${keyword}`);
@@ -91,59 +92,70 @@ function buildContext(url, keyword, audience, snap) {
 
   lines.push('\n── AUDIT SNAPSHOT ──');
 
-  if (s.meta?.title)       lines.push(`Page Title: ${s.meta.title}`);
-  if (s.meta?.description) lines.push(`Meta Description: ${s.meta.description}`);
+  // Helper: safely get the .data payload of a skill
+  const d = (key) => snap?.[key]?.data || {};
 
-  if (s.querymap?.primary_queries?.length) {
+  const meta      = d('meta');
+  const querymap  = d('querymap');
+  const entities  = d('entities');
+  const brief     = d('brief');
+  const topical   = d('topical');
+  const linking   = d('linking');
+  const eeat      = d('eeat');
+
+  if (meta.title)       lines.push(`Page Title: ${meta.title}`);
+  if (meta.description) lines.push(`Meta Description: ${meta.description}`);
+
+  if (querymap.primary_queries?.length) {
     lines.push('\nTop User Queries:');
-    s.querymap.primary_queries.slice(0, 8).forEach(q =>
+    querymap.primary_queries.slice(0, 8).forEach(q =>
       lines.push(`  - "${q.query}" [${q.intent}] (${q.priority})`)
     );
   }
 
-  if (s.querymap?.featured_snippet_opportunities?.length) {
+  if (querymap.featured_snippet_opportunities?.length) {
     lines.push('\nFeatured Snippet Opportunities:');
-    s.querymap.featured_snippet_opportunities.slice(0, 4).forEach(o =>
+    querymap.featured_snippet_opportunities.slice(0, 4).forEach(o =>
       lines.push(`  - "${o.query}" → ${o.recommended_format} format (${o.current_coverage})`)
     );
   }
 
-  if (s.querymap?.missing_queries?.length) {
-    lines.push(`\nMissing Queries (content gaps): ${s.querymap.missing_queries.slice(0, 6).join(', ')}`);
+  if (querymap.missing_queries?.length) {
+    lines.push(`\nMissing Queries (content gaps): ${querymap.missing_queries.slice(0, 6).join(', ')}`);
   }
 
-  if (s.entities?.entities?.length) {
+  if (entities.entities?.length) {
     lines.push('\nKey Entities Found:');
-    s.entities.entities.slice(0, 10).forEach(e =>
+    entities.entities.slice(0, 10).forEach(e =>
       lines.push(`  - ${e.name} (${e.type}) — ${e.relevance || 'relevant'}`)
     );
   }
 
-  if (s.entities?.missing_entities?.length) {
-    lines.push(`\nEntity Gaps (not covered): ${s.entities.missing_entities.slice(0, 6).join(', ')}`);
+  if (entities.missing_entities?.length) {
+    lines.push(`\nEntity Gaps (not covered): ${entities.missing_entities.slice(0, 6).join(', ')}`);
   }
 
-  if (s.brief?.recommended_structure) {
+  if (brief.recommended_structure) {
     lines.push('\nContent Brief Summary:');
-    lines.push(JSON.stringify(s.brief.recommended_structure).slice(0, 600));
+    lines.push(JSON.stringify(brief.recommended_structure).slice(0, 600));
   }
 
-  if (s.topical?.clusters?.length) {
+  if (topical.clusters?.length) {
     lines.push('\nTopical Clusters:');
-    s.topical.clusters.slice(0, 4).forEach(c =>
+    topical.clusters.slice(0, 4).forEach(c =>
       lines.push(`  - ${c.name || c.topic}: ${(c.subtopics || []).slice(0, 3).join(', ')}`)
     );
   }
 
-  if (s.linking?.internal_link_opportunities?.length) {
+  if (linking.internal_link_opportunities?.length) {
     lines.push('\nInternal Link Opportunities (from audit):');
-    s.linking.internal_link_opportunities.slice(0, 5).forEach(l =>
+    linking.internal_link_opportunities.slice(0, 5).forEach(l =>
       lines.push(`  - Anchor: "${l.anchor_text}" → ${l.target_url}`)
     );
   }
 
-  if (s.eeat?.priority_fixes?.length) {
-    lines.push(`\nE-E-A-T Priority Fixes: ${s.eeat.priority_fixes.slice(0, 3).join('; ')}`);
+  if (eeat.priority_fixes?.length) {
+    lines.push(`\nE-E-A-T Priority Fixes: ${eeat.priority_fixes.slice(0, 3).join('; ')}`);
   }
 
   lines.push('\n── END AUDIT SNAPSHOT ──');
